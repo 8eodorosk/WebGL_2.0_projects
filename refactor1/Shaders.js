@@ -9,7 +9,7 @@ class shaderBuilder{
 
 		if (this.program != null) {
 			this.gl = gl;
-			gl.gl.useProgram(this.program);
+			gl.useProgram(this.program);
 			this.mUniformList = []; // key value pairs, where value {loc, type}
 			this.mTextureList = []; //indexed list {loc, tex}
 
@@ -277,6 +277,14 @@ class ShaderUtil{
 		return ShaderUtil.createProgram(gl, vShader, fShader, true);
 	}
 
+	/**
+	 * [createProgramFromText description]
+	 * @param  {[type]} gl         [description]
+	 * @param  {[type]} vShaderTxt [description]
+	 * @param  {[type]} fShaderTxt [description]
+	 * @param  {[type]} doValidate [description]
+	 * @return {[type]}            [description]
+	 */
 	static createProgramFromText(gl,vShaderTxt,fShaderTxt,doValidate){
 		let vShader		= ShaderUtil.createShader(gl,vShaderTxt,gl.VERTEX_SHADER);		if(!vShader)	return null;
 		let fShader		= ShaderUtil.createShader(gl,fShaderTxt,gl.FRAGMENT_SHADER);	if(!fShader){	gl.deleteShader(vShader); return null; }
