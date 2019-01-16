@@ -50,3 +50,15 @@ const loadProgram = (vsSrc, fsSrc) =>
 const gBufferProgram = loadProgram('./glsl/geo_vs.glsl','./glsl/geo_fs.glsl');
 
 
+const returnProgram = () => 
+	Promise.all([
+		loadProgram('./glsl/geo_vs.glsl','./glsl/geo_fs.glsl'),
+		loadProgram('./glsl/main_vs.glsl','./glsl/main_fs.glsl')
+	]);
+
+
+returnProgram.then(programs => {
+	console.log(programs);
+})
+
+
