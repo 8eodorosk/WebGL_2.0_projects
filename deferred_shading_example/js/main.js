@@ -175,7 +175,7 @@ returnProgram().then(programs => {
     gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(0);
 
-    
+
     var indexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, sphere.indices, gl.STATIC_DRAW);
@@ -242,6 +242,100 @@ returnProgram().then(programs => {
         }
     ];
 
+    var mvpMatrix = mat4.create();
+
+    for (var i = 0, len = lights.length; i < len; ++i) {
+        utils.xformMatrix(mvpMatrix, lights[i].position);
+        //console.log("mvpMatrix ",mvpMatrix, "\n");
+        mat4.multiply(mvpMatrix, viewProjMatrix, mvpMatrix);
+        lights[i].uniformData.set(mvpMatrix);
+        // console.log(lights[i].uniformData, i,"\n");
+        lights[i].uniformData.set(lights[i].position, 16);
+        // console.log(lights[i].uniformData,i, "\n");
+        lights[i].uniformData.set(lights[i].color, 20);
+        // console.log(lights[i].uniformData, i,"\n");
+        gl.bindBufferBase(gl.UNIFORM_BUFFER, 0, lights[i].uniformBuffer);        
+        gl.bufferData(gl.UNIFORM_BUFFER, lights[i].uniformData, gl.STATIC_DRAW);
+    }
+
+
+        var image = new Image();
+        image.onload = function() {
+            var colorTexture = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, colorTexture);
+            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+            
+            var levels = levels = Math.floor(Math.log2(Math.max(this.width, this.height))) + 1;
+            gl.texStorage2D(gl.TEXTURE_2D, levels, gl.RGBA8, image.width, image.height);
+            gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, image.width, image.height, gl.RGBA, gl.UNSIGNED_BYTE, image);
+            gl.generateMipmap(gl.TEXTURE_2D);
+            gl.generateMipmap(gl.TEXTURE_2D);
+            //////////////////
+            // BIND TEXTURES
+            //////////////////
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, positionTarget);
+            gl.activeTexture(gl.TEXTURE1);
+            gl.bindTexture(gl.TEXTURE_2D, normalTarget);
+            gl.activeTexture(gl.TEXTURE2);
+            gl.bindTexture(gl.TEXTURE_2D, uvTarget);
+            gl.activeTexture(gl.TEXTURE3);
+            gl.bindTexture(gl.TEXTURE_2D, colorTexture);
+            //////////////////////////////
+            // SET MAIN PROGRAM UNIFORMS
+            //////////////////////////////
+            
+            gl.useProgram(mainProgram);
+            gl.uniform3fv(eyePositionLocation, eyePosition);
+            gl.uniform1i(positionBufferLocation, 0);
+            gl.uniform1i(normalBufferLocation, 1);
+            gl.uniform1i(uVBufferLocation, 2);
+            gl.uniform1i(textureMapLocation, 3);
+            function draw() {
+                /////////////////////////
+                // DRAW TO GBUFFER
+                /////////////////////////
+                gl.bindFramebuffer(gl.FRAMEBUFFER, gBuffer);
+                gl.useProgram(geoProgram);
+                gl.bindVertexArray(cubeVertexArray);
+                gl.depthMask(true);
+                gl.disable(gl.BLEND);
+                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                for (var i = 0, len = boxes.length; i < len; ++i) {
+                    boxes[i].rotate[0] += 0.01;
+                    boxes[i].rotate[1] += 0.02;
+                    utils.xformMatrix(boxes[i].modelMatrix, boxes[i].translate, boxes[i].rotate, boxes[i].scale);
+                    mat4.multiply(boxes[i].mvpMatrix, viewProjMatrix, boxes[i].modelMatrix);
+                
+                    matrixUniformData.set(boxes[i].modelMatrix);
+                    matrixUniformData.set(boxes[i].mvpMatrix, 16);
+                    gl.bindBufferBase(gl.UNIFORM_BUFFER, 0, matrixUniformBuffer);
+                    gl.bufferSubData(gl.UNIFORM_BUFFER, 0, matrixUniformData);
+                    gl.drawArrays(gl.TRIANGLES, 0, numCubeVertices);
+                }
+                /////////////////////////
+                // MAIN DRAW PASS
+                /////////////////////////
+                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+                gl.useProgram(mainProgram);
+                gl.bindVertexArray(sphereVertexArray);
+                gl.depthMask(false);
+                gl.enable(gl.BLEND);
+                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                for (var i = 0, len = lights.length; i < len; ++i) {
+                    gl.bindBufferBase(gl.UNIFORM_BUFFER, 0, lights[i].uniformBuffer);
+                    gl.drawElements(gl.TRIANGLES, numSphereElements, gl.UNSIGNED_SHORT, 0);
+                }
+                requestAnimationFrame(draw);
+            }
+            requestAnimationFrame(draw);
+            
+        }
+        image.src = "khronos_webgl.png";
 
 })
 
