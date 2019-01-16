@@ -18,7 +18,7 @@ uniform sampler2D uTextureMap;
 out vec4 fragColor;
 
 void main(){
-	ivec2 fragCoord = ivec2(gl_fragCoord.xy);
+	ivec2 fragCoord = ivec2(gl_FragCoord.xy);
 	vec3 position = texelFetch(uPositionBuffer, fragCoord, 0).xyz;
 	vec3 normal = normalize(texelFetch(uNoemalBuffer, fragCoord, 0).xyz);
 	vec2 uv = texelFetch(uUVBuffer, fragCoord, 0).xy;

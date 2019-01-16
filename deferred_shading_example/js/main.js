@@ -57,7 +57,7 @@ const returnProgram = () =>
 	]);
 
 
-returnProgram.then(programs => {
+returnProgram().then(programs => {
 	console.log(programs);
 })
 

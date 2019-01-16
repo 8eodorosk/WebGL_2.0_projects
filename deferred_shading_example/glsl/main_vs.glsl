@@ -11,5 +11,5 @@ uniform LightUniforms{
 } uLight;
 
 void main(){
-	gl_position = uLight.mvp * aPosition;
+	gl_Position = uLight.mvp * aPosition;
 }
