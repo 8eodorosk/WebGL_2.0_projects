@@ -132,6 +132,7 @@ returnProgram().then(programs => {
     //////////////////////////////////////////////
     var lightUniformsLocation = gl.getUniformBlockIndex(mainProgram, "LightUniforms");
     gl.uniformBlockBinding(mainProgram, lightUniformsLocation, 0);
+    
     var eyePositionLocation = gl.getUniformLocation(mainProgram, "uEyePosition");
     var positionBufferLocation = gl.getUniformLocation(mainProgram, "uPositionBuffer");
     var normalBufferLocation = gl.getUniformLocation(mainProgram, "uNormalBuffer");
