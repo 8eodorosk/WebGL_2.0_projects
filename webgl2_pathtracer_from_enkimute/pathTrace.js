@@ -1,5 +1,13 @@
 // helpers .. merge and download binary file.
-  function m(a,b) { for (var i in b) a[i]=b[i]; return a; }
+  function m(a,b) { 
+    console.log('1_ a: ', a, 'b: ', b, '\n');
+    for (var i in b){
+      console.log('2_ a[i]: ', a[i], 'b[i]: ', b[i], '\n');
+      a[i]=b[i];
+    } 
+      console.log('3_ a: ', a);
+      return a; 
+  }
   function fileAsArray(name,complete,prog) {
     var r=m(new XMLHttpRequest(),{responseType:'arraybuffer',onprogress:prog,onload:function(){complete&&complete(this.response)}});
     r.open("GET",name,true); r.send();
@@ -32,6 +40,8 @@
   function png_to_raw(png) {
     var c = document.createElement('canvas'), x=c.width=png.width, y=c.height=png.height, gl=c.getContext('webgl');
 
+    console.log('png file: ', png, '\n');
+
     var texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, png);
@@ -45,6 +55,7 @@
 
     gl.deleteTexture(texture);
     gl.deleteFramebuffer(fb);
+
     return res.buffer;
   }
 
@@ -52,8 +63,8 @@
   var todo=2,map,polyData;
 
   var mapI = new Image(), polyDataI = new Image();
-  mapI.onload = function() { map = new Float32Array(png_to_raw(this)); if(!--todo) allthere(); };
-  polyDataI.onload = function() { polyData = new Float32Array(png_to_raw(this)); if (!--todo) allthere()};
+  mapI.onload = function() { map = new Float32Array(png_to_raw(this)); console.log('MAP: ',map); if(!--todo) allthere(); };
+  polyDataI.onload = function() { polyData = new Float32Array(png_to_raw(this));  if (!--todo) allthere()};
   mapI.src = 'map2.bin.png';
   polyDataI.src = 'polydata2.bin.png';  
 
@@ -61,11 +72,25 @@
   function allthere(){
 
   // settings.
-    var gridres=128,totX=4096,totY=391,pbrtShowrender=true,pbrtBounces=2,pbrtBatch=1,pbrtSamples=Math.floor((parseInt(document.location.hash.slice(1))||200)/pbrtBatch);
+    var gridres=128,
+        totX=4096,
+        totY=391,
+        pbrtShowrender=true,
+        pbrtBounces=2,
+        pbrtBatch=1,
+        pbrtSamples=Math.floor((parseInt(document.location.hash.slice(1))||200)/pbrtBatch);
+
+
     var pbrtGrid = { bbox : new Float32Array([-16.35320053100586,-3.3039399147033692,-13.719999885559082,31.68820018768311,13.706639957427978,24.6798002243042])};
 
-  // Shader helpers.
-    function createShader(gl, source, type) { var shader=gl.createShader(type); gl.shaderSource(shader, source); gl.compileShader(shader); return shader; }
+    // Shader helpers.
+    function createShader(gl, source, type) { 
+      var shader=gl.createShader(type); 
+      gl.shaderSource(shader, source); 
+      gl.compileShader(shader); 
+      return shader; 
+    }
+
     function createProgram(gl, vertexShaderSource, fragmentShaderSource) {
         var program = gl.createProgram();
         gl.attachShader(program, createShader(gl, vertexShaderSource, gl.VERTEX_SHADER)); 
@@ -74,7 +99,7 @@
         return program;
     };
 
-  // Offscreen float buffers.
+    // Offscreen float buffers.
     function createOffscreen(gl,width,height) {
        var colorTexture = gl.createTexture();
        gl.bindTexture(gl.TEXTURE_2D, colorTexture);
@@ -95,19 +120,26 @@
        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
        return {
-         framebuffer:framebuffer,colorTexture:colorTexture,depthBuffer:depthBuffer,width:width,height:height,gl:gl,
-         bind   : function() { this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.framebuffer); this.gl.viewport(0,0,this.width,this.height); },
+         framebuffer:framebuffer,
+         colorTexture:colorTexture,
+         depthBuffer:depthBuffer,
+         width:width,
+         height:height,
+         gl:gl,
+         bind   : function() { this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.framebuffer); this.gl.viewport(0,0,this.width,this.height); /*console.log(this.framebuffer);*/}, //exw ena console log edw
          unbind : function() { this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null); },
          delete : function() { this.gl.deleteRenderbuffer(this.depthBuffer); this.gl.deleteFramebuffer(this.framebuffer); this.gl.deleteTexture(this.colorTexture); }
        }
     }
 
-  // setup output canvas, gl context and offscreen.
+    // setup output canvas, gl context and offscreen.
     var canvas = m(document.body.appendChild(document.createElement('canvas')),{width:800,height:450});
     m(canvas.style,{width:'800px',height:'450px'});
     var gl = canvas.getContext('webgl2'); if (!gl) alert('webGL2 required !');
     var ext1 = gl.getExtension('EXT_color_buffer_float'); if (!ext1) alert('videocard required');
     var ofscreen1 = createOffscreen(gl,canvas.width,canvas.height);
+
+    console.log('ofscreen1', ofscreen1);
   
   // Shaders for accumulation and tonemap.
     var vs2=`#version 300 es
