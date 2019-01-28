@@ -137,6 +137,7 @@ function start() {
     let colorsUniformArrayLocation1 = gl.getUniformLocation(cube.shaderProgram, "colorsUniformArray[1]");
     let colorsUniformArrayLocation2 = gl.getUniformLocation(cube.shaderProgram, "colorsUniformArray[2]")
     let offsetsLocation             = gl.getUniformLocation(cube.shaderProgram, "offsets");
+    let timeLocation                = gl.getUniformLocation(cube.shaderProgram, "time");
 
 
     gl.useProgram(cube.shaderProgram);
@@ -148,7 +149,7 @@ function start() {
     var projectionMatrixLocation = gl.getUniformLocation(cube.shaderProgram, "projectionMatrix");
 
     var angle = 0;
-
+    let currentTime = 0.1;
     function runRenderLoop() {
         gl.clearColor(0, 0, 0, 1);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -162,6 +163,7 @@ function start() {
       
 
         angle += .1;
+        currentTime += .1;
 
         gl.uniformMatrix4fv(cube.modelMatrixLocation, false, cube.modelMatrix);
         gl.uniformMatrix4fv(viewMatrixLocation, false, viewMatrix);
@@ -171,6 +173,7 @@ function start() {
         gl.uniform4fv(colorsUniformArrayLocation1, uniformsColorsArray[1]);
         gl.uniform4fv(colorsUniformArrayLocation2, uniformsColorsArray[2]);
         gl.uniform3fv(offsetsLocation, offsetsVector);
+        gl.uniform1f(timeLocation, currentTime);
 
 
         gl.useProgram(cube.shaderProgram);

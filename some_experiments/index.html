@@ -35,7 +35,7 @@
 		fcolor = vec4(	
 						sin(time)*colorsUniformArray[(gl_InstanceID + gl_VertexID)%3].r,
 						cos(time)*colorsUniformArray[(gl_InstanceID + gl_VertexID)%3].g,
-						cos(2*time)*sin(time)*colorsUniformArray[(gl_InstanceID + gl_VertexID)%3].b,
+						cos(2.0*time)*sin(time)*colorsUniformArray[(gl_InstanceID + gl_VertexID)%3].b,
 						1
 					);
 	}
