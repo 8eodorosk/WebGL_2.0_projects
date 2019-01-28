@@ -7,7 +7,13 @@
 
 
 	<canvas width="1024" height="786" id="renderCanvas">	</canvas>
-	<script type="text/javascript" src="main.js"></script>
+	<script type="text/javascript" src="glMatrix-0.9.5.max.js"></script>
+	<!-- <script type="text/javascript" src="main.js"></script> -->
+	
+	<!-- <script type="text/javascript" src="main_cube.js"></script> -->
+	<script type="text/javascript" src="instanced_cube.js"></script>
+
+	
 </body>
 
 <script type="vertexShader" id="vertexShader">#version 300 es
@@ -15,9 +21,23 @@
 	in vec4 color;
 	out vec4 fcolor;
 
+	uniform mat4 modelMatrix;
+	uniform mat4 viewMatrix;
+	uniform mat4 projectionMatrix;
+
+	uniform vec4 colorsUniformArray[3];
+	uniform vec3 offsets; 
+
+	uniform float time;
+
 	void main(){
-		gl_Position = vec4(position, 1);
-		fcolor = color;
+		gl_Position = projectionMatrix*viewMatrix*modelMatrix*vec4(position.x+offsets[gl_InstanceID],position.yz, 1 );
+		fcolor = vec4(	
+						sin(time)*colorsUniformArray[(gl_InstanceID + gl_VertexID)%3].r,
+						cos(time)*colorsUniformArray[(gl_InstanceID + gl_VertexID)%3].g,
+						cos(2*time)*sin(time)*colorsUniformArray[(gl_InstanceID + gl_VertexID)%3].b,
+						1
+					);
 	}
 </script>
 

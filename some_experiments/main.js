@@ -58,12 +58,16 @@ function start(){
 	}
 
 
+	gl.useProgram(shaderProgram);
+	let vao = gl.createVertexArray();
+	gl.bindVertexArray(vao);
+
 	let positionAttributeLocation  = gl.getAttribLocation(shaderProgram, "position");
 	gl.enableVertexAttribArray(positionAttributeLocation);
 	// gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
 	// gl.vertexAttribPointer(positionAttributeLocation, 3, gl.FLOAT, false, 0, 0);
 
-	let colorAttributeLocation  = gl.getAttribLocation(shaderProgram, "position");
+	let colorAttributeLocation  = gl.getAttribLocation(shaderProgram, "color");
 	gl.enableVertexAttribArray(colorAttributeLocation);
 	// gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexColorBuffer);
 	// gl.vertexAttribPointer(colorAttributeLocation, 4, gl.FLOAT, false, 0, 0);
@@ -71,8 +75,23 @@ function start(){
 	const FLOAT_SIZE = 4;
 	gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexColorAndPositionBuffer);
 	gl.vertexAttribPointer(positionAttributeLocation, 3, gl.FLOAT, false, 7*FLOAT_SIZE, 0);
-	gl.vertexAttribPointer(colorAttributeLocation, 4, gl.FLOAT, false, 7*FLOAT_SIZE, 0);
+	gl.vertexAttribPointer(colorAttributeLocation, 4, gl.FLOAT, false, 7*FLOAT_SIZE, 3*FLOAT_SIZE);
 
+
+	requestAnimationFrame(runRenderLoop);
+
+
+	function runRenderLoop(){
+
+		gl.clearColor(0, 0, 0, 1);
+		gl.clear(gl.COLOR_BUFFER_BIT);
+
+
+		gl.useProgram(shaderProgram);
+		gl.bindVertexArray(vao);
+		gl.drawArrays(gl.TRIANGLES, 0, 3);
+		requestAnimationFrame(runRenderLoop);
+	}
 }
 
 function getAndCompileShader(id){
