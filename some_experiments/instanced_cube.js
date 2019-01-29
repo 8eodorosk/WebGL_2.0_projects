@@ -57,6 +57,7 @@ function createCube()
 
     cube.colors = [];
 
+
     var faceColors = [
         [1.0, 0.0, 0.0, 1.0], // Front face
         [0.0, 1.0, 0.0, 1.0], // Back face
@@ -120,6 +121,7 @@ function createCube()
 
 function start() {
 
+    let start = 1;
     var canvas = document.getElementById("renderCanvas");
     gl = canvas.getContext("webgl2");
         
