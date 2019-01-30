@@ -71,8 +71,7 @@ function createCube()
         for (var i = 0 ; i < 6 ; i++) {
             cube.colors = cube.colors.concat(color);
         }
-    }
-    );
+  });
 
 
     cube.positionBuffer = gl.createBuffer();
@@ -209,4 +208,3 @@ function getAndCompileShader(id) {
     }
     return shader;
 }
-

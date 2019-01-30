@@ -11,12 +11,13 @@
 	<!-- <script type="text/javascript" src="main.js"></script> -->
 	
 	<!-- <script type="text/javascript" src="main_cube.js"></script> -->
-	<script type="text/javascript" src="instanced_cube.js"></script>
-
+	<!-- <script type="text/javascript" src="instanced_cube.js"></script> -->
+	<!-- <script type="text/javascript" src="rectangle.js"></script> -->
+	<script type="text/javascript" src="textures.js"></script>
 	
 </body>
 
-<script type="vertexShader" id="vertexShader">#version 300 es
+<!-- <script type="vertexShader" id="vertexShader">#version 300 es
 	in vec3 position;
 	in vec4 color;
 	out vec4 fcolor;
@@ -48,6 +49,77 @@
 
 	void main(){
 		finalColor = fcolor;
+	}
+	
+</script>
+
+ -->
+
+
+<!-- auto edw einai gia to rectangle -->
+<!-- <script type="vertexShader" id="vertexShader">#version 300 es
+	in vec3 position;
+	in vec4 color;
+	out vec4 fcolor;
+
+	uniform mat4 modelMatrix;
+	uniform mat4 viewMatrix;
+	uniform mat4 projectionMatrix;
+
+	void main(){
+		gl_Position = projectionMatrix*viewMatrix*modelMatrix*vec4(position, 1 );
+		fcolor = color;
+					
+	}
+</script>
+
+<script type="fragmentShader" id="fragmentShader">#version 300 es
+	precision mediump float;
+	in vec4 fcolor;
+	out vec4 finalColor;
+
+	void main(){
+		finalColor = fcolor;
+	}
+	
+</script>
+
+
+ -->
+
+
+
+<!-- ayto einai gia ta textures -->
+<script type="vertexShader" id="vertexShader">#version 300 es
+	in vec3 position;
+	in vec4 color;
+	in vec2 textureCoordinate;
+
+	out vec4 fcolor;
+	out vec2 fTextureCoordinate;
+
+	uniform mat4 modelMatrix;
+	uniform mat4 viewMatrix;
+	uniform mat4 projectionMatrix;
+
+	void main(){
+		gl_Position = projectionMatrix*viewMatrix*modelMatrix*vec4(position, 1 );
+		fcolor = color;
+		fTextureCoordinate = textureCoordinate;
+					
+	}
+</script>
+
+<script type="fragmentShader" id="fragmentShader">#version 300 es
+	precision mediump float;
+	in vec4 fcolor;
+	in vec2 fTextureCoordinate;
+	uniform sampler2D sampler0;
+	uniform sampler2D sampler1;
+	out vec4 finalColor;
+
+	void main(){
+		finalColor = mix(texture(sampler0, fTextureCoordinate), texture(sampler1,fTextureCoordinate), .5)*fcolor;
 	}
 	
 </script>
