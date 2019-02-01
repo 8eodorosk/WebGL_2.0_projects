@@ -190,7 +190,6 @@ function start(){
 		angle+=0.1;
 		
 
-
 		gl.uniformMatrix4fv(modelMatrixLocation, false,modelMatrix);
 		gl.uniformMatrix4fv(viewMatrixLocation, false,viewMatrix);
 		gl.uniformMatrix4fv(projectionMatrixLocation, false, projectionMatrix);
@@ -207,7 +206,6 @@ function start(){
 		mat4.rotateX(modelMatrix, modelMatrix, 0.25);
 		angle+=0.1;
 		
-
 
 		gl.uniformMatrix4fv(modelMatrixLocation, false,modelMatrix);
 		gl.uniformMatrix4fv(viewMatrixLocation, false,viewMatrix);
