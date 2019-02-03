@@ -239,7 +239,7 @@ function start(){
 	console.log(gl.getParameter(gl.ACTIVE_TEXTURE));
 	// gl.bindTexture(gl.TEXTURE_2D, null);	
 
-	gl.activeTexture(gl.TEXTURΕ1);
+	gl.activeTexture(gl.TEXTURΕ0+1);
 	gl.bindTexture(gl.TEXTURE_2D, texture2);
 	gl.uniform1i(samplerOneUniformLocation, 1);
 	console.log(gl.getParameter(gl.ACTIVE_TEXTURE));
@@ -341,4 +341,3 @@ function getAndCompileShader(id){
 
 	return shader;
 }
-

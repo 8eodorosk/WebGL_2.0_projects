@@ -238,58 +238,16 @@ function start() {
     var angle = 0;
     let camera = {
       position: vec3.fromValues(0,0,0),
-      direction: vec3.fromValues(0,0,-1)
+      direction: vec3.fromValues(0,0,-1),
+      pitch: 0,
+      yaw: -1*Math.PI/2.0
     }
 
     // vec3.add(camera.target, camera.position ,vec3.fromValues(0,0,-1));
 
 
 
-    let isWPressed = false;
-    let isAPressed = false;
-    let isDPressed = false;
-    let isSPressed = false;
-    let isGPressed = false;
-    let isJPressed = false;
-
-    document.addEventListener("keydown", function(e){
-      if (e.key  == "w") {isWPressed = true;}
-      if (e.key  == "s") {isSPressed = true;}
-      if (e.key  == "a") {isAPressed = true;}
-      if (e.key  == "d") {isDPressed = true;}
-      if (e.key  == "g") {isGPressed = true;}
-      if (e.key  == "j") {isJPressed = true;}
-    });
-
-    function moveCamera(){
-      if (isWPressed) {
-        camera.position[2] -= .1;
-      }
-       if (isSPressed) {
-        camera.position[2] += .1;
-      }
-       if (isAPressed) {
-        camera.position[0] -= .1
-      }
-       if (isDPressed) {
-        camera.position[0] += .1;
-      }
-      if (isGPressed) {
-        camera.direction[0] -= .01;
-      }
-      if (isJPressed) {
-        camera.direction[0] += .01;
-      }
-    }
-
-    document.addEventListener("keyup", function(e){
-       if (e.key  == "w") {isWPressed = false;}
-      if (e.key  == "s") {isSPressed = false;}
-      if (e.key  == "a") {isAPressed = false;}
-      if (e.key  == "d") {isDPressed = false;}
-      if (e.key  == "g") {isGPressed = false;}
-      if (e.key  == "j") {isJPressed = false;}
-    })
+    
 
     function runRenderLoop() {
         
@@ -299,12 +257,22 @@ function start() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         gl.enable(gl.DEPTH_TEST);
 
-        moveCamera();
+        moveCamera(camera);
         let target  = vec3.create();
         vec3.add(target, camera.position ,camera.direction);
         //prwta upol;ogizoume ton target kai meta ananeomoume to lookat
         //vec3.add(camera.target, camera.position ,vec3.fromValues(0,0,-1));
         // direction vector = target - position
+
+         /**
+         * Generates a look-at matrix with the given eye position, focal point, and up axis
+         *
+         * @param {mat4} out mat4 frustum matrix will be written into
+         * @param {vec3} eye Position of the viewer
+         * @param {vec3} center Point the viewer is looking at
+         * @param {vec3} up vec3 pointing up
+         * @returns {mat4} out
+         */
         mat4.lookAt(viewMatrix, camera.position,target, vec3.fromValues(0,1,0));
         // camera.position[1] += 0.1;
         // vec3.add(camera.target, camera.position ,vec3.fromValues(0,0,-1));
@@ -377,3 +345,78 @@ function getAndCompileShader(id) {
     return shader;
 }
 
+let isWPressed = false;
+let isAPressed = false;
+let isDPressed = false;
+let isSPressed = false;
+let isGPressed = false;
+let isJPressed = false;
+let isHPressed = false;
+let isYPressed = false;
+
+document.addEventListener("keydown", function(e){
+  if (e.key  == "w") {isWPressed = true;}
+  if (e.key  == "s") {isSPressed = true;}
+  if (e.key  == "a") {isAPressed = true;}
+  if (e.key  == "d") {isDPressed = true;}
+  if (e.key  == "g") {isGPressed = true;}
+  if (e.key  == "j") {isJPressed = true;}
+  if (e.key  == "y") {isYPressed = true;}
+  if (e.key  == "h") {isHPressed = true;}
+});
+
+function moveCamera(camera){
+
+  camera.direction[0] = Math.cos(camera.pitch) * Math.cos(camera.yaw);
+  camera.direction[1] = Math.sin(camera.pitch);
+  camera.direction[2] = Math.cos(camera.pitch) * Math.sin(camera.yaw); 
+
+  camera.right = vec3.fromValues(-1*Math.sin(camera.yaw), 0, Math.cos(camera.yaw));
+
+
+  let movementDirection = vec3.create();
+  if (isWPressed) {
+    // camera.position[2] -= .1;
+    vec3.scale(movementDirection, camera.direction, .1);
+    vec3.add(camera.position, camera.position, movementDirection);
+  }
+   if (isSPressed) {
+    // camera.position[2] += .1;
+    vec3.scale(movementDirection, camera.direction, -.1);
+    vec3.add(camera.position, camera.position, movementDirection);
+  }
+   if (isAPressed) {
+    // camera.position[0] -= .1
+    vec3.scale(movementDirection, camera.right, -.1);
+    vec3.add(camera.position, camera.position, movementDirection);
+  }
+   if (isDPressed) {
+    // camera.position[0] += .1;
+    vec3.scale(movementDirection, camera.right, .1);
+    vec3.add(camera.position, camera.position, movementDirection);
+  }
+  //rotations
+  if (isGPressed) {
+    camera.yaw -= .02;
+  }
+  if (isJPressed) {
+    camera.yaw += .02;
+  }
+   if (isYPressed) {
+    camera.pitch += .02;
+  }
+   if (isHPressed) {
+    camera.pitch -= .02;
+  }
+}
+
+document.addEventListener("keyup", function(e){
+  if (e.key  == "w") {isWPressed = false;}
+  if (e.key  == "s") {isSPressed = false;}
+  if (e.key  == "a") {isAPressed = false;}
+  if (e.key  == "d") {isDPressed = false;}
+  if (e.key  == "g") {isGPressed = false;}
+  if (e.key  == "j") {isJPressed = false;}
+  if (e.key  == "y") {isYPressed = false;}
+  if (e.key  == "h") {isHPressed = false;}
+});

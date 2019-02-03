@@ -139,7 +139,6 @@
 	out vec4 vertexWorldPosition;
 	out vec3 vertexNormal;
 
-
 	uniform mat4 modelMatrix;
 	uniform mat4 viewMatrix;
 	uniform mat4 projectionMatrix;
@@ -151,7 +150,7 @@
 		fcolor = color;
 		fTextureCoordinate = textureCoordinate;
 		//ayto ginetai giati prepei kai ta normals na einai sto modelspace(worldspace)
-		vertexNormal = mat3(inverse(transpose(modelMatrix)))*normal;
+		vertexNormal = mat3(modelMatrix)*normal;
 					
 	}
 </script>
@@ -168,33 +167,18 @@
 	uniform sampler2D sampler1;
 	uniform vec3 lightColor;
 	uniform vec3 lightPosition;
-	uniform vec3 cameraPosition;
 
 	out vec4 finalColor;
 
 	void main(){
-		
-		vec3 lightDirection = normalize(lightPosition - vertexWorldPosition.xyz);
-		vec3 viewDirection = normalize(cameraPosition - vertexWorldPosition.xyz);
-		vec4 objectColor = vec4(1.,0.,1.,1.);
-		vec3 normalizedVertexNormal = normalize(vertexNormal);
-
-		vec4 texColor = mix(texture(sampler0, fTextureCoordinate), texture(sampler1, fTextureCoordinate), 0.5) * fcolor;
-		
-
 		float ambientIntensity = .1;
-		vec4 ambientComponent = vec4((ambientIntensity * lightColor), 1.);
-		
-		float diffuseIntensity = max(dot(normalizedVertexNormal, lightDirection)  ,0.0);
+		vec3 direction = normalize(lightPosition - vertexWorldPosition.xyz);
+		vec4 objectColor = vec4(1.,0.,1.,1.);
+
+		vec4 ambientComponent = vec4((lightColor *ambientIntensity * lightColor), 1.);
+		float diffuseIntensity = max(dot(normalize(vertexNormal), direction)  ,0.0);
 		vec4 diffuseComponent =  vec4(diffuseIntensity * lightColor, 1.);
-		
-
-		vec3  reflectDriection =  reflect(-lightDirection, normalizedVertexNormal);
-		float specularIntensity = pow(max(dot(reflectDriection,viewDirection),0.),32.);
-		vec4 specularComponent = vec4(specularIntensity*lightColor, 1);
-		
-
-		finalColor = (ambientComponent + diffuseComponent + specularComponent) * texColor;
+		finalColor = (ambientComponent + diffuseComponent) * objectColor;
 	}
 	
 </script>
