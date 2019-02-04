@@ -75,7 +75,7 @@ returnProgram().then(programs => {
     var gBuffer = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER, gBuffer);
 
-    gl.activeTexture(gl.TEXTURE0);
+    //gl.activeTexture(gl.TEXTURE0);
 
     var positionTarget = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, positionTarget);

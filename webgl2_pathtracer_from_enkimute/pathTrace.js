@@ -34,7 +34,13 @@
     m[15]=m[3]*x+m[7]*y+m[11]*z+m[15];
     return m;
   }
-  function i() { return new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]) };
+
+  //return the identity matrix
+  function i() { return new Float32Array([1,0,0,0,
+                                          0,1,0,0,
+                                          0,0,1,0,
+                                          0,0,0,1]) 
+  };
   
 // png compressed raw file support..
   function png_to_raw(png) {
@@ -44,18 +50,23 @@
 
     var texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, png);
+    // gl.texImage2D(enum_target, int_level, enum_internalformat, enum_format, enum_type, Object_pixels)
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, png);
      
     fb = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+    // gl.framebufferTexture2D(enum_target, enum_attachment, enum_texTarget, WebGLTexture_texture, int_level)
+    // With the framebuffer bound, the "texture" is attached by calling the following method:
     gl.framebufferTexture2D( gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
 
     var res = new Uint8Array(x*y*4);
+    // reads a block of pixels from a specified rectangle of the current color framebuffer into an ArrayBufferView object.
     gl.readPixels(0,0,x,y,gl.RGBA,gl.UNSIGNED_BYTE,res);
 
     gl.deleteTexture(texture);
     gl.deleteFramebuffer(fb);
 
+    console.log('png ',png ,'\n'+'res ', res, ' res.buffer ', res.buffer);
     return res.buffer;
   }
 
@@ -63,6 +74,7 @@
   var todo=2,map,polyData;
 
   var mapI = new Image(), polyDataI = new Image();
+  //calls alltherre() when polydata.onload finishes
   mapI.onload = function() { map = new Float32Array(png_to_raw(this)); console.log('MAP: ',map); if(!--todo) allthere(); };
   polyDataI.onload = function() { polyData = new Float32Array(png_to_raw(this));  if (!--todo) allthere()};
   mapI.src = 'map2.bin.png';
@@ -80,8 +92,15 @@
         pbrtBatch=1,
         pbrtSamples=Math.floor((parseInt(document.location.hash.slice(1))||200)/pbrtBatch);
 
+    //edw exoume to bounding box 1 kai 2, oi prwtoi 3 arithmoi einai gia to prwto 
 
-    var pbrtGrid = { bbox : new Float32Array([-16.35320053100586,-3.3039399147033692,-13.719999885559082,31.68820018768311,13.706639957427978,24.6798002243042])};
+    var pbrtGrid = { 
+      bbox : new Float32Array
+          ([
+            -16.35320053100586,-3.3039399147033692,-13.719999885559082,
+            31.68820018768311,13.706639957427978,24.6798002243042
+          ])
+    };
 
     // Shader helpers.
     function createShader(gl, source, type) { 
@@ -100,6 +119,10 @@
     };
 
     // Offscreen float buffers.
+    // 1. store the color for every fragment that is rendered in the framebuffer so we can create an image.
+    // 2. depth information to make sure that we have a scene where overlapping objects look consistent.
+    // the offscreen rendering is done for the rotation of the mesh, otherwise he should do ray intersection in the 
+    // browser
     function createOffscreen(gl,width,height) {
        var colorTexture = gl.createTexture();
        gl.bindTexture(gl.TEXTURE_2D, colorTexture);
@@ -108,6 +131,8 @@
          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
        gl.bindTexture(gl.TEXTURE_2D, null);
 
+
+      // Renderbuffers are used to provide storage for the individual buffers used in a framebuffer.
        var depthBuffer = gl.createRenderbuffer();
        gl.bindRenderbuffer(gl.RENDERBUFFER, depthBuffer);
          gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, width, height);
@@ -119,7 +144,7 @@
          gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthBuffer);
        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-       return {
+      return {
          framebuffer:framebuffer,
          colorTexture:colorTexture,
          depthBuffer:depthBuffer,
@@ -146,15 +171,21 @@
       #define POSITION_LOCATION 0
       precision lowp float;
       layout(location = POSITION_LOCATION) in vec3 position;
-      void main() { gl_Position = vec4(position, 1.0); }`;
+      void main() { 
+        gl_Position = vec4(position, 1.0); 
+      }`;
 
     var fs2=`#version 300 es
       precision lowp float;
       precision lowp sampler2D;
       uniform sampler2D accum;
       uniform float count;
-      out vec4 color;
-      void main() { color = vec4(sqrt(texelFetch(accum,ivec2(gl_FragCoord.xy),0).rgb*count),1.0); }
+      out vec4 color
+      ;
+      void main() { 
+        color = vec4(sqrt(texelFetch(accum,ivec2(gl_FragCoord.xy),0).rgb*count),1.0); 
+        //color = vec4(0.,0.,0.,1.);
+      }
     `;
 
   // Actual Path tracing shaders.
@@ -190,10 +221,15 @@
       out vec4 color;
       
       uint N = ${pbrtSamples}u, i;
+
       float seed;
-      float minc(const vec3 x) { return min(x.x,min(x.y,x.z)); }
+
+      float minc(const vec3 x) { 
+        return min(x.x,min(x.y,x.z)); 
+      }
       
       float random_ofs=0.0;
+
       vec3 cosWeightedRandomHemisphereDirectionHammersley( const vec3 n ) {
         float x = float(i)/float(N); 
         i = (i << 16u) | (i >> 16u);
@@ -206,26 +242,64 @@
         float sqrtx = sqrt(r.x);
         return normalize(vec3( sqrtx*cos(r.y)*uu + sqrtx*sin(r.y)*vv + sqrt(1.0-r.x)*n ));
       }
+
+
       vec4 trace( inout vec3 realori, const vec3 dir) {
-        float len=0.0,l,b,mint=1000.0;
-        vec2 minuv, mintri, cpos;
-        vec3 scaler=vec3(bbinb/${gridres}.0)/dir,orig=realori,v0,v1,v2;
+        float len=0.0,
+              l,
+              b,
+              mint=1000.0;
+
+        vec2  minuv, 
+              mintri, 
+              cpos;
+
+        vec3  scaler=vec3(bbinb/${gridres}.0)/dir,
+              orig=realori,
+              v0,
+              v1,
+              v2;
+
         for (int i=0;i<150;i++){
            vec3 txc=(orig-bboxA)*bboxB;
+
            if ( txc != clamp(txc,0.0,1.0)) break;
+
            vec3 tex=textureLod(grid,txc,0.0).rgb;
+
            for(int tri=0; tri<512; tri++) { 
-              if (tex.b<=0.0) break; cpos=tex.rg; tex.rb+=vec2(3.0/4096.0,-1.0); 
+              if (tex.b<=0.0) break; 
+              cpos=tex.rg; 
+              tex.rb+=vec2(3.0/4096.0,-1.0); 
+
               v1 = textureLodOffset(tris,cpos,0.0,ivec2(1,0)).rgb;
               v2 = textureLodOffset(tris,cpos,0.0,ivec2(2,0)).rgb;
-              vec3 P = cross(dir,v2); float det=dot(v1,P); if (det>-EPSILON) continue;
+
+              vec3 P = cross(dir,v2); 
+              float det=dot(v1,P); 
+              if (det>-EPSILON) continue;
+
               v0 = textureLod(tris,cpos,0.0).rgb;
-              vec3 T=realori-v0; float invdet=1.0/det; float u=dot(T,P)*invdet; if (u < 0.0 || u > 1.0) continue;
-              vec3 Q=cross(T,v1); float v=dot(dir,Q)*invdet; if(v<0.0||u+v>1.0) continue;
-              float t=dot(v2, Q)*invdet; if (t>EPSILON  && t<mint) { mint=t; mintri=cpos; minuv=vec2(u,v); }  
+              vec3 T=realori-v0; 
+              float invdet=1.0/det; 
+              float u=dot(T,P)*invdet; 
+              if (u < 0.0 || u > 1.0) continue;
+              vec3 Q=cross(T,v1); 
+              float v=dot(dir,Q)*invdet; 
+              if(v<0.0||u+v>1.0) continue;
+              float t=dot(v2, Q)*invdet; 
+              if (t>EPSILON  && t<mint) { 
+                mint=t; mintri=cpos; 
+                minuv=vec2(u,v); 
+              }  
            }
-           b=max(0.0,-tex.b-1.0); txc=fract(txc*${gridres}.0);
+
+           b=max(0.0,-tex.b-1.0); 
+
+           txc=fract(txc*${gridres}.0);
+
            l=minc(scaler*mix(b+1.0-txc,-b-txc,vec3(lessThan(dir,vec3(0.0)))))+EPSILON*50.0;
+
            len += l;
            if (mint <= len) {
              realori += dir*(mint);
@@ -243,20 +317,47 @@
       void main()
       {
           bboxA=bbina; bboxB=1.0/bbinb; i=uint(incount);
-          vec2 fc = vec2(gl_FragCoord.xy), fcu=fc/resolution;
+
+          vec2 fc = vec2(gl_FragCoord.xy), 
+                    fcu=fc/resolution;
+
           seed = inseed +fcu.x+fcu.y; 
+
+          //random numbers
           vec2 aa = fract(sin(vec2(seed,seed+0.1))*vec2(43758.5453123,22578.1459123));
           random_ofs = fract(gl_FragCoord.x * gl_FragCoord.y * inseed + aa.x)*6.2831;
+
           vec4 view = proj * vec4((fc+aa)/(resolution/2.0)-1.0,0.0,1.0);
           view = normalize(MVP*vec4(view.xyz/view.w,0.0));
-          vec3 orig=origin,v1=(bboxA-orig)/view.xyz,v2=v1+(bbinb-vec3(0.2))/view.xyz,far=max(v1,v2),near=min(v1,v2);
-          float en=max(near.x,max(near.y,near.z)), ex=min(far.x,min(far.y,far.z));
-          if (ex < 0.0 || en > ex) { color=vec4(1.0); return; }
+
+          //some vec3 declarations
+          vec3  orig=origin,
+                v1=(bboxA-orig)/view.xyz,
+                v2=v1+(bbinb-vec3(0.2))/view.xyz,
+                far=max(v1,v2),
+                near=min(v1,v2);
+
+          //float declarations
+          float en=max(near.x,max(near.y,near.z)), 
+                ex=min(far.x,min(far.y,far.z));
+
+          if (ex < 0.0 || en > ex) { 
+            color=vec4(1.0); 
+            return; 
+          }
+
           orig += max(0.0,en)*view.xyz;
           vec4 hit=trace(orig,view.xyz);
-          if (hit.w <= 0.0) { color.rgb = vec3(1.0); return; }
+          if (hit.w <= 0.0) { 
+            color.rgb = vec3(1.0); 
+            return; 
+          }
+
           hit=trace(orig, -cosWeightedRandomHemisphereDirectionHammersley(hit.xyz));
-          if (hit.w <= 0.0) { color.rgb = vec3(0.8); return; }
+          if (hit.w <= 0.0) { 
+            color.rgb = vec3(0.8); 
+            return; 
+          }
       }`;
 
   // Upload polygon and acceleration data.
@@ -265,6 +366,8 @@
     gl.bindTexture(gl.TEXTURE_3D, texture);
     gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    // gl.texImage3D(target, level, internalformat, width, height, depth, border, format, type, GLintptr offset); 
+    // gridres=128,
     gl.texImage3D( gl.TEXTURE_3D, 0, gl.RGB32F, gridres, gridres, gridres, 0, gl.RGB, gl.FLOAT, map );  
 
     var texture2 = gl.createTexture();
@@ -272,6 +375,9 @@
     gl.bindTexture(gl.TEXTURE_2D, texture2);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    // gl.texImage2D(enum_target, int_level, enum_internalformat, enum_format, enum_type, Object_pixels)
+    // void gl.texImage2D(target, level, internalformat, width, height, border, format, type, GLintptr offset);
+    //  totX=4096,  totY=391
     gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGB32F, totX, totY*4, 0, gl.RGB, gl.FLOAT, polyData );  
 
   // Create the path tracing program, grab the uniforms.
@@ -312,7 +418,7 @@
     var viewportMV = new Float32Array(matrix); 
     var accum_count=1, diff=true, abort=false;
 
-  // frame handler.    
+    // frame handler.    
     function frame() {
     // Do we need to restart rendering (i.e. viewport change)
       if (diff) {
@@ -323,7 +429,7 @@
         diff=false;
       }
 
-    // Render more samples.
+      // Render more samples.
       if (!abort) {  
       // Bind the offscreen and render a new sample.
         ofscreen1.bind();
@@ -351,7 +457,7 @@
           gl.disable(gl.BLEND);
         ofscreen1.unbind();
 
-      // Display progress (mixdown from float to ldr)  
+        // Display progress (mixdown from float to ldr)  
         gl.useProgram(program2);
         gl.uniform1i(uniformAccumLocation, 0);
         gl.uniform1f(uniformCountLocation, 1.0/accum_count);

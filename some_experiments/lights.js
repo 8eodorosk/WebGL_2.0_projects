@@ -244,7 +244,6 @@ function createObjectCubes(cube){
         alert("Could not link shaders");
     }
 
-
     objectCube.vao = gl.createVertexArray();
     gl.bindVertexArray(objectCube.vao);
 
@@ -258,13 +257,10 @@ function createObjectCubes(cube){
     gl.bindBuffer(gl.ARRAY_BUFFER, cube.colorBuffer);
     gl.vertexAttribPointer(objectCube.colorAttributeLocation, 4, gl.FLOAT, false, 0, 0);
 
-
-
-   objectCube.vertexNormalAttributeLocation = gl.getAttribLocation(objectCube.shaderProgram, "normal");
+    objectCube.vertexNormalAttributeLocation = gl.getAttribLocation(objectCube.shaderProgram, "normal");
     gl.enableVertexAttribArray(objectCube.vertexNormalAttributeLocation);
     gl.bindBuffer(gl.ARRAY_BUFFER, cube.normalsBuffer);
     gl.vertexAttribPointer(objectCube.vertexNormalAttributeLocation, 3, gl.FLOAT, false, 0, 0);
-
 
     objectCube.textureCoordinateAttributeLocation = gl.getAttribLocation(objectCube.shaderProgram, "textureCoordinate");
     gl.enableVertexAttribArray(objectCube.textureCoordinateAttributeLocation);
@@ -272,12 +268,9 @@ function createObjectCubes(cube){
     gl.vertexAttribPointer(objectCube.textureCoordinateAttributeLocation, 2, gl.FLOAT, false, 0, 0);
 
 
-
     gl.bindVertexArray(null);
 
     objectCube.modelMatrix = mat4.create();
-
-   
 
     objectCube.modelMatrixLocation = gl.getUniformLocation(objectCube.shaderProgram, "modelMatrix");
     objectCube.samplerUniformLocation = gl.getUniformLocation(objectCube.shaderProgram, "sampler0");
@@ -310,7 +303,6 @@ function createLightCubes(cube){
         alert("Could not link shaders");
     }
 
-
     lightCube.vao = gl.createVertexArray();
     gl.bindVertexArray(lightCube.vao);
 
@@ -318,11 +310,9 @@ function createLightCubes(cube){
     gl.enableVertexAttribArray(lightCube.positionAttributeLocation);
     gl.bindBuffer(gl.ARRAY_BUFFER, cube.positionBuffer);
     gl.vertexAttribPointer(lightCube.positionAttributeLocation, 3, gl.FLOAT, false, 0, 0);
-
-   
-    lightCube.modelMatrix = mat4.create()
-    lightCube.modelMatrixLocation = gl.getUniformLocation(lightCube.shaderProgram, "modelMatrix");
   
+    lightCube.modelMatrix = mat4.create()
+    lightCube.modelMatrixLocation = gl.getUniformLocation(lightCube.shaderProgram, "modelMatrix"); 
 
     return  lightCube;
 }
