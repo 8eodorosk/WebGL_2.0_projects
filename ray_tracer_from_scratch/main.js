@@ -34,15 +34,26 @@ mat4 rotate() {
                 0.0,             0.0,             0.0,    1.0);
 }
 
-// https://github.com/Jojendersie/gpugi/blob/5d18526c864bbf09baca02bfab6bcec97b7e1210/gpugi/shader/intersectiontests.glsl#L63
-bool isTriangle(Ray ray, in vec3 p0, in vec3 p1, in vec3 p2, out vec3 N) {
-  vec3 e0 = p1 - p0, e1 = p0 - p2;
-  N = cross(e1, e0);
-  vec3 e2 = (1.0 / dot(N, ray.dir)) * (p0 - ray.orig);
-  vec3 i = cross(ray.dir, e2);
-  vec3 b = vec3(0.0, dot(i, e1), dot(i, e0));
-  b.x = 1.0 - (b.z + b.y);
-  return (dot(N, e2) > 1e-8) && all(greaterThanEqual(b, vec3(0.0)));
+bool isTriangle(Ray ray, in vec3 p0, in vec3 p1, in vec3 p2, out vec3 triangleNormal) {
+
+    vec3 barycentricCoord;
+    vec3 e0 = p1 - p0; 
+    vec3 e1 = p0 - p2;
+
+    triangleNormal = cross(e1, e0);
+
+
+    vec3 e2 = (1.0 / dot(triangleNormal, ray.dir)) * (p0 - ray.orig);
+    vec3 i = cross(ray.dir, e2);
+
+    barycentricCoord.y = dot(i, e1);
+    barycentricCoord.z = dot(i, e0);
+    barycentricCoord.x = 0.0;
+    barycentricCoord.x = 1.0 - (barycentricCoord.z + barycentricCoord.y);
+
+    float hit = dot(triangleNormal, e2);
+
+    return (hit > 1e-8) && all(greaterThanEqual(barycentricCoord, vec3(0.0)));
 }
 
 void Camera(out Ray ray, vec3 lookAt, vec3 up, float angle, float aspect) {
@@ -60,13 +71,12 @@ void main() {
   vec3 hit = vec3(0.);
   vec4 a = vec4(0.0), b = vec4(0.0), c = vec4(0.0);
   
-  R_ = Ray(vec3(0.0, 0.0, 3.0), vec3(vuv, -1.));
+  R_ = Ray(vec3(0.0, 0.0, 5.0), vec3(vuv, -1.));
   
   Camera(R_, vec3(0., 0., 1.), vec3(0., 1., 0.), 90.0, (Res.x / Res.y));
   
   float mindist = -1000.0;
 
-	// here comes this importend part unpack the texture
   for (int i = 0; i < vertsCount; i += 3) 
   {
 
