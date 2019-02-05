@@ -65,6 +65,7 @@ void Camera(out Ray ray, vec3 lookAt, vec3 up, float angle, float aspect) {
   ray.dir = normalize(g + ray.dir.x * u + ray.dir.y * v);
 }
 
+
 void main() {
   vec3 SceneCol = vec3(0.5);
   
