@@ -187,9 +187,28 @@ returnProgram().then(programs => {
     // UNIFORM DATA
     ////////////////////
     var projMatrix = mat4.create();
+    /**
+     * Generates a perspective projection matrix with the given bounds
+     *
+     * @param {mat4} out mat4 frustum matrix will be written into
+     * @param {number} fovy Vertical field of view in radians
+     * @param {number} aspect Aspect ratio. typically viewport width/height
+     * @param {number} near Near bound of the frustum
+     * @param {number} far Far bound of the frustum
+     * @returns {mat4} out
+     */
     mat4.perspective(projMatrix, Math.PI / 2, canvas.width / canvas.height, 0.1, 10.0);
     var viewMatrix = mat4.create();
     var eyePosition = vec3.fromValues(1, 1, 1);
+    /**
+     * Generates a look-at matrix with the given eye position, focal point, and up axis
+     *
+     * @param {mat4} out mat4 frustum matrix will be written into
+     * @param {vec3} eye Position of the viewer
+     * @param {vec3} center Point the viewer is looking at
+     * @param {vec3} up vec3 pointing up
+     * @returns {mat4} out
+     */
     mat4.lookAt(viewMatrix, eyePosition, vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
     var viewProjMatrix = mat4.create();
     mat4.multiply(viewProjMatrix, projMatrix, viewMatrix);

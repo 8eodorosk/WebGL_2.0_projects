@@ -20,18 +20,69 @@ uniform sampler2D uMeshData;
 uniform int vertsCount;
 layout(location = 0) out lowp vec4 fragColor;
 
+#define MAX_BOUNCES 4
+
 struct Ray {
   vec3 orig, dir;
 }R_;
 
+
+struct Sphere{
+    vec3 center;
+    float radius;
+};
+
 mat4 rotate() {
-    float x = mouse.x, y=mouse.y+sin(time*2.),z=0.;
+    // original x= mouse.x, y= mouse.y
+    float x = mouse.y; //y=mouse.y+sin(time*2.),z=0.;
+    float y= mouse.x,z=0.;
     float a = sin(x), b = cos(x), c = sin(y), d = cos(y), e = sin(z), f = cos(z), ac = a * c, bc = b * c;
 
     return mat4(d * f,           d * e,           -c,     0.0, 
                 ac * f - b * e,  ac * e + b * f,  a * d,  0.0,     
                 bc * f + a * e,  bc * e - a * f,  b * d,  0.0, 
                 0.0,             0.0,             0.0,    1.0);
+}
+
+mat4 frotate( float x, float y, float z )
+{
+    float a = sin(x); float b = cos(x); 
+    float c = sin(y); float d = cos(y); 
+    float e = sin(z); float f = cos(z); 
+
+    float ac = a*c;
+    float bc = b*c;
+
+    return mat4( d*f,      d*e,       -c, 0.0,
+                 ac*f-b*e, ac*e+b*f, a*d, 0.0,
+                 bc*f+a*e, bc*e-a*f, b*d, 0.0,
+                 0.0,      0.0,      0.0, 1.0 );
+}
+
+mat4 translate( float x, float y, float z )
+{
+    return mat4( 1.0, 0.0, 0.0, 0.0,
+                 0.0, 1.0, 0.0, 0.0,
+                 0.0, 0.0, 1.0, 0.0,
+                 x, y, z, 1.0 );
+}
+
+
+vec3 getHitPoint(Ray ray, float t) {
+    return ray.orig + t * ray.dir;   
+}
+
+bool hitSphere(vec3 orig,vec3 dir,vec3 center,float r,out vec3 intersect){
+    vec3 oc = orig - center;
+    float b = dot(oc,dir);
+    float c = dot(oc,oc) - r * r;
+    if(c>0.0 && b > 0.0) return false;
+    float discriminant = b*b -c;
+    if(discriminant < 0.0) return false;
+    float t= -b-sqrt(discriminant);
+    if(t<0.0) return false;
+    intersect = orig + t*dir;
+    return true;  
 }
 
 bool isTriangle(Ray ray, in vec3 p0, in vec3 p1, in vec3 p2, out vec3 triangleNormal) {
@@ -56,48 +107,126 @@ bool isTriangle(Ray ray, in vec3 p0, in vec3 p1, in vec3 p2, out vec3 triangleNo
     return (hit > 1e-8) && all(greaterThanEqual(barycentricCoord, vec3(0.0)));
 }
 
+bool isTriangle(Ray ray, in vec3 p0, in vec3 p1, in vec3 p2, out vec3 position, out vec3 triangleNormal, out float t){
+    // compute plane's normal
+    vec3 e0 = p1 - p0; 
+    vec3 e1 = p0 - p2;
+
+    triangleNormal = cross(e1, e0);
+
+    float nDotRayDirection = dot(triangleNormal, ray.dir);
+
+    //check if ray and plane are parallel
+    if (abs(nDotRayDirection) < 1e-8){ 
+        return false; //they are parralel so they don intersect
+    }
+
+    //compute d parameter 
+    float d = dot(triangleNormal, e0);
+
+    // compoute t
+    t = (dot(triangleNormal, ray.orig) + d) / nDotRayDirection;
+    // check if the triangle is in behind the ray
+    if (t<0.) {
+        return false;
+    }
+
+    //vec3 P = ray.orig + t * ray.dir;
+    vec3 P = getHitPoint(ray, t);
+
+    //vector perpendicular to triangle's plane
+    vec3 C;
+
+    //edge 0
+    vec3 edge0 = p1-p0;
+    vec3 ep0 = P - e0;
+    C = cross(edge0, ep0);
+
+    if (dot(triangleNormal, C) < 0.) return false;
+
+    //edge 1
+    vec3 edge1 = p2-p1;
+    vec3 ep1 = P - p1;
+    C = cross(edge1, ep1);
+
+    if (dot(triangleNormal, C) < 0.) return false;
+
+    //edge 2
+    vec3 edge2 = p0-p2;
+    vec3 ep2 = P - p2;
+    C = cross(edge2, ep2);
+
+    if (dot(triangleNormal, C) < 0.) return false;
+
+    position = P;
+    return true;
+}
+
+
+
 void Camera(out Ray ray, vec3 lookAt, vec3 up, float angle, float aspect) {
-  vec3 g = normalize(lookAt - ray.orig);
-  vec3 u = normalize(cross(g, up));
-  vec3 v = normalize(cross(u, g));
-  u = u * tan(radians(angle * .5));
-  v = v * tan(radians(angle * .5)) / aspect;
-  ray.dir = normalize(g + ray.dir.x * u + ray.dir.y * v);
+
+    vec3 g = normalize(lookAt - ray.orig);
+    vec3 u = normalize(cross(g, up));
+    vec3 v = normalize(cross(u, g));
+    u = u * tan(radians(angle * .5));
+    v = v * tan(radians(angle * .5)) / aspect;
+    ray.dir = normalize(g + ray.dir.x * u + ray.dir.y * v);
+
 }
 
 
 void main() {
-  vec3 SceneCol = vec3(0.5);
-  
-  vec3 hit = vec3(0.);
-  vec4 a = vec4(0.0), b = vec4(0.0), c = vec4(0.0);
-  
-  R_ = Ray(vec3(0.0, 0.0, 5.0), vec3(vuv, -1.));
-  
-  Camera(R_, vec3(0., 0., 1.), vec3(0., 1., 0.), 90.0, (Res.x / Res.y));
-  
-  float mindist = -1000.0;
+    vec3 SceneCol = vec3(0.5);
 
-  for (int i = 0; i < vertsCount; i += 3) 
-  {
 
-    a = rotate() * texelFetch(uMeshData, ivec2(i, 0), 0);
-    b = rotate() * texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
-    c = rotate() * texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
-    
-    if (isTriangle(R_, a.xyz, b.xyz, c.xyz, hit))
+    //lightsource starting code here
+    mat4 mv =   translate(0.0,1.0,-2.0)
+                *frotate(3.14*0.15,0.0,0.0)
+                *frotate(0.0,0.4,0.0);
+    Sphere lightSource;
+    lightSource.radius = 0.18;
+    lightSource.center = vec4(mv*vec4(2.5*sin(time),1.5,2.5*cos(time),1.0)).xyz;
+
+
+    vec3 hit = vec3(0.);
+    vec4 a = vec4(0.0), b = vec4(0.0), c = vec4(0.0);
+
+    R_ = Ray(vec3(0.0, 0.0, 4.0), vec3(vuv, -1.));
+
+    Camera(R_, vec3(0., 0., 1.), vec3(0., 1., 0.), 120.0, (Res.x / Res.y));
+
+    float mindist = -1000.0;
+
+    //draw light souirce
+    bool isHit = hitSphere(R_.orig,R_.dir,lightSource.center,lightSource.radius,hit);
+
+    if(isHit && hit.z > mindist)
     {
-      float z = hit.z;
-      if (z > mindist) {
-        mindist = z;
-        SceneCol.rgb = vec3(hit.x, hit.y, 1. - (hit.x - hit.y));
-      };
+        mindist = hit.z;
+        SceneCol.rgb= vec3(1.0,1.0,1.0);
     }
-  }
-  
-  vec3 sky = vec3(0.5, 0.25, 0.1) * (-R_.dir.y - 0.1);
-  fragColor.rgb = SceneCol + sky;
-  fragColor.a = 1.0;
+
+    //draw mnesh loaded from texture data
+    for (int i = 0; i < vertsCount; i += 3) {
+
+        a = rotate() * texelFetch(uMeshData, ivec2(i, 0), 0);
+        b = rotate() * texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
+        c = rotate() * texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
+
+        if (isTriangle(R_, a.xyz, b.xyz, c.xyz, hit)){
+            //vec3 intersect = R_.orig +
+            float z = hit.z;
+            if (z > mindist) {
+                mindist = z;
+                SceneCol.rgb = vec3(hit.x, hit.y, 1. - (hit.x - hit.y));
+            };
+        }
+    }
+
+    vec3 sky = vec3(0.5, 0.25, 0.1) * (-R_.dir.y - 0.1);
+    fragColor.rgb = SceneCol + sky;
+    fragColor.a = 1.0;
 }`;
 
     const canvas = document.getElementById('c');
@@ -113,8 +242,8 @@ void main() {
 
     const { width, height } = canvas.getBoundingClientRect();
     console.log(width, height)
-    gl.canvas.width =  width; //window.innerWidth;
-    gl.canvas.height =  height; //window.innerHeight;
+    gl.canvas.width =  900; //window.innerWidth;
+    gl.canvas.height =  450; //window.innerHeight;
 
     // init
     const P = gl.createProgram();
@@ -149,7 +278,7 @@ void main() {
 
     // fullscreen quad
     gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-    gl.bufferData(gl.ARRAY_BUFFER, new Int8Array([-4, 2, 2, -4, 2, 2, -4, 2, -4, -4, 2, -4 ]), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Int8Array([-4, 2, 2, -4, 2, 2 /*, -4, 2, -4, -4, 2, -4*/ ]), gl.STATIC_DRAW);
     gl.enableVertexAttribArray(0);
     gl.vertexAttribPointer(0, 2, gl.BYTE, !1, 0, 0);
     gl.bindVertexArray(null);
@@ -1319,7 +1448,7 @@ void main() {
         gl.uniform1f(time_loc, clock);
         gl.uniform2f(mouse_loc, mousePosition[0], mousePosition[1]);
         gl.uniform2f(res_loc, width, height);
-        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 6);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 3);
         requestAnimationFrame(draw);
     };
     requestAnimationFrame(draw);
