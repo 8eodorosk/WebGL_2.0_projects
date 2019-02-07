@@ -85,6 +85,32 @@ bool hitSphere(vec3 orig,vec3 dir,vec3 center,float r,out vec3 intersect){
     return true;  
 }
 
+//triangle intersection by miffy
+bool hitTriangle(vec3 orig,vec3 dir,vec3 a,vec3 b,vec3 c,out vec3 uvt,out vec3 triangleNormal){
+   float eps= 0.0000001;
+   vec3 ab=b-a;
+   vec3 ac=c-a;
+   
+   triangleNormal=cross(dir,ac);
+
+   float det=dot(ab,triangleNormal);
+   // if the determinant is negative the triangle is backfacing
+   // if the determinant is close to 0, the ray misses the triangl
+   if(det<=eps){ return false;}
+   
+   vec3 ao=orig-a;
+   float u=dot(ao,triangleNormal)/det;
+   if(u<0.0 || u>1.0){ return false;}
+    
+   vec3 e=cross(ao,ab);
+   float v=dot(dir,e)/det;
+   if(v<0.0||u+v>1.0){ return false;}
+
+   float t= dot(ac,e)/det;
+   uvt = vec3(u,v,t);
+   return true;
+}
+
 bool isTriangle(Ray ray, in vec3 p0, in vec3 p1, in vec3 p2, out vec3 triangleNormal) {
 
     vec3 barycentricCoord;
@@ -107,7 +133,8 @@ bool isTriangle(Ray ray, in vec3 p0, in vec3 p1, in vec3 p2, out vec3 triangleNo
     return (hit > 1e-8) && all(greaterThanEqual(barycentricCoord, vec3(0.0)));
 }
 
-bool isTriangle(Ray ray, in vec3 p0, in vec3 p1, in vec3 p2, out vec3 position, out vec3 triangleNormal, out float t){
+// triangle implementation from scratsapixel
+bool isTriangle2(Ray ray, in vec3 p0, in vec3 p1, in vec3 p2, out vec3 position, out vec3 triangleNormal, out float t){
     // compute plane's normal
     vec3 e0 = p1 - p0; 
     vec3 e1 = p0 - p2;
@@ -162,8 +189,6 @@ bool isTriangle(Ray ray, in vec3 p0, in vec3 p1, in vec3 p2, out vec3 position, 
     return true;
 }
 
-
-
 void Camera(out Ray ray, vec3 lookAt, vec3 up, float angle, float aspect) {
 
     vec3 g = normalize(lookAt - ray.orig);
@@ -175,26 +200,27 @@ void Camera(out Ray ray, vec3 lookAt, vec3 up, float angle, float aspect) {
 
 }
 
-
 void main() {
     vec3 SceneCol = vec3(0.5);
 
 
     //lightsource starting code here
-    mat4 mv =   translate(0.0,1.0,-2.0)
-                *frotate(3.14*0.15,0.0,0.0)
-                *frotate(0.0,0.4,0.0);
+    mat4 mv =   translate(0.0,1.0,-2.0);
+                //*frotate(3.14*2.,0.0,0.0)
+                //*frotate(0.0,1.,0.0);
     Sphere lightSource;
     lightSource.radius = 0.18;
-    lightSource.center = vec4(mv*vec4(2.5*sin(time),1.5,2.5*cos(time),1.0)).xyz;
+    //lightSource.center = vec3(-1.,1.,0.);
+    lightSource.center= vec4(mv*vec4(2.5*sin(time),1.5,2.5*cos(time),1.0)).xyz;
+
 
 
     vec3 hit = vec3(0.);
     vec4 a = vec4(0.0), b = vec4(0.0), c = vec4(0.0);
 
-    R_ = Ray(vec3(0.0, 0.0, 4.0), vec3(vuv, -1.));
+    R_ = Ray(vec3(0.0, 0.0, 5.0), vec3(vuv, -1.));
 
-    Camera(R_, vec3(0., 0., 1.), vec3(0., 1., 0.), 120.0, (Res.x / Res.y));
+    Camera(R_, vec3(0., 0., 1.), vec3(0., 1., 0.), 90.0, (Res.x / Res.y));
 
     float mindist = -1000.0;
 
@@ -210,18 +236,49 @@ void main() {
     //draw mnesh loaded from texture data
     for (int i = 0; i < vertsCount; i += 3) {
 
-        a = rotate() * texelFetch(uMeshData, ivec2(i, 0), 0);
-        b = rotate() * texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
-        c = rotate() * texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
+        //original translation matrices
+        // a = rotate() * texelFetch(uMeshData, ivec2(i, 0), 0);
+        // b = rotate() * texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
+        // c = rotate() * texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
 
-        if (isTriangle(R_, a.xyz, b.xyz, c.xyz, hit)){
-            //vec3 intersect = R_.orig +
-            float z = hit.z;
-            if (z > mindist) {
-                mindist = z;
-                SceneCol.rgb = vec3(hit.x, hit.y, 1. - (hit.x - hit.y));
-            };
-        }
+       // a = frotate(3.14*.5,0.,0.0) * texelFetch(uMeshData, ivec2(i, 0), 0);
+       // b = frotate(3.14*.5,0.,0.0) * texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
+       // c = frotate(3.14*.5,0.,0.0) * texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
+
+        a = texelFetch(uMeshData, ivec2(i, 0), 0);
+        b = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
+        c = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
+
+
+
+        // me ayto ton algorithmo exw glitches
+        vec3 triangleNormal;
+        vec3 uvt;
+        bool isHit = hitTriangle(R_.orig,R_.dir, a.xyz,b.xyz,c.xyz,uvt, triangleNormal);
+        if (isHit) {
+            vec3 intersect = R_.orig + R_.dir*uvt.z;
+            float z = intersect.z;
+            if (z>mindist) {
+               mindist = z;
+                SceneCol.rgb = vec3(intersect.x, intersect.y, 1. - (intersect.x - intersect.y));
+                vec3 lightDir =  normalize(lightSource.center-intersect);
+                float diffuse = clamp(dot(lightDir, triangleNormal), 0., 1.);
+                SceneCol.rgb *= diffuse; 
+            }
+         }        
+
+        // me ayto de moy fwtizei ti deyteri mpala
+        //original intersection test
+        //if (isTriangle(R_, a.xyz, b.xyz, c.xyz, hit)){
+        //    float z = hit.z;
+        //    if (z > mindist) {
+        //        mindist = z;
+        //        SceneCol.rgb = vec3(hit.x, hit.y, 1. - (hit.x - hit.y));
+        //        vec3 lightDir =  normalize(lightSource.center-hit);
+        //        float diffuse = clamp(dot(lightDir, hit), 0., 1.);
+        //        SceneCol.rgb *= diffuse * 4.; 
+        //    };
+        //}
     }
 
     vec3 sky = vec3(0.5, 0.25, 0.1) * (-R_.dir.y - 0.1);
@@ -1418,8 +1475,14 @@ void main() {
         -0.162456, -0.499995, -0.850654, 0.262869, -0.809012, -0.525738, -0.276388, -0.850649, -0.447220,
         -0.162456, -0.499995, -0.850654, 0.425323, -0.309011, -0.850654, 0.262869, -0.809012, -0.525738,
         0.425323, -0.309011, -0.850654, 0.723607, -0.525725, -0.447220, 0.262869, -0.809012, -0.525738,
+
+
+        // 6.399504,6.313925,0.551519,-6.171330,6.313925,0.551519,-6.171330,-6.256909,0.551519,
+        // -6.171330,-6.256909,0.551519,6.399504,-6.256909,0.551519,6.399504,6.313925,0.551519,
+
     ];
 
+    console.log(verts.length /3);
 
     const meshVerts = new Float32Array(verts);
     const vertsLenght = meshVerts.length / 3;
