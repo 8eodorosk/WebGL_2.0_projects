@@ -125,7 +125,7 @@ void Camera(out Ray ray, vec3 lookAt, vec3 up, float angle, float aspect) {
 
 }
 
-//return intersection point with lightSource
+//return intersection point with lightSource for the shadow ray
 vec3 hitLightSource(Ray R_, Sphere lightSource ,out float mindist){
     vec3 hit = vec3(0.0,0.0,0.0);
     
@@ -138,47 +138,13 @@ vec3 hitLightSource(Ray R_, Sphere lightSource ,out float mindist){
 }
 
 
-//return intersection point with the mesh
+//return intersection point with the mesh for the shadow ray
 //TODO mallon edw prepei na valw kai ta amterials kai to arxiko xrwma kai edw na kanw ro ray casting gia to shadow
 vec3 hitMesh(Ray ray,  out float mindist){
     vec4 a = vec4(0.0), b = vec4(0.0), c = vec4(0.0);
     vec3 intersect = vec3(0.0,0.0,0.0);
 
-    for (int i = 0; i < 36; i += 3) {
-        a = texelFetch(uMeshData, ivec2(i, 0), 0);
-        b = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
-        c = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
-
-        vec3 triangleNormal;
-        vec3 uvt;
-        bool isHit = hitTriangle(R_.orig,R_.dir, a.xyz,b.xyz,c.xyz,uvt, triangleNormal);
-        if (isHit) {
-            intersect = R_.orig + R_.dir*uvt.z;
-            float z = intersect.z;
-            if (z>mindist) {
-             mindist = z;
-            }
-        }      
-    }
-
-    for (int i =  36; i < 276; i += 3) {
-        a = texelFetch(uMeshData, ivec2(i, 0), 0);
-        b = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
-        c = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
-
-        vec3 triangleNormal;
-        vec3 uvt;
-        bool isHit = hitTriangle(R_.orig,R_.dir, a.xyz,b.xyz,c.xyz,uvt, triangleNormal);
-        if (isHit) {
-            intersect = R_.orig + R_.dir*uvt.z;
-            float z = intersect.z;
-            if (z>mindist) {
-             mindist = z;
-            }
-        }      
-    }
-
-    for (int i =  276; i < 516; i += 3) {
+    for (int i = 0; i < vertsCount; i += 3) {
         a = texelFetch(uMeshData, ivec2(i, 0), 0);
         b = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
         c = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
@@ -198,12 +164,99 @@ vec3 hitMesh(Ray ray,  out float mindist){
 }
 
 
-bool hitScene(Ray ray){
+
+bool hitScene(Ray ray, out vec4 SceneCol){
+        
+     vec4 a = vec4(0.0), b = vec4(0.0), c = vec4(0.0);
+    float mindist = -1000.;
+    Sphere lightSource;
+
+    //draw mesh loaded from texture data
+    for (int i = 0; i < 36; i += 3) {
+       
+        a = texelFetch(uMeshData, ivec2(i, 0), 0);
+        b = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
+        c = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
+
+        vec3 triangleNormal;
+        vec3 uvt;
+        bool isHit = hitTriangle(R_.orig,R_.dir, a.xyz,b.xyz,c.xyz,uvt, triangleNormal);
+        if (isHit) {
+            vec3 intersect = R_.orig + R_.dir*uvt.z;
+            float z = intersect.z;
+            if (z>mindist) {
+                 mindist = z;
+
+                
+
+                //edw kanoume trace gia to shadow
 
 
-    
+                //SceneCol.rgb = vec3(intersect.x, intersect.y, 1. - (intersect.x - intersect.y));
+                SceneCol.rgb = vec3(intersect.x, intersect.y, intersect.z);
+                vec3 lightDir =  normalize(lightSource.center-intersect);
+                float diffuse = clamp(dot(lightDir, triangleNormal), 0., 1.);
+                SceneCol.rgb *= diffuse*1.5; 
+            }
+        }      
+    }
+
+    for (int i =  36; i < 276; i += 3) {
+     
+        a = texelFetch(uMeshData, ivec2(i, 0), 0);
+        b = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
+        c = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
+
+        vec3 triangleNormal;
+        vec3 uvt;
+        bool isHit = hitTriangle(R_.orig,R_.dir, a.xyz,b.xyz,c.xyz,uvt, triangleNormal);
+        if (isHit) {
+            vec3 intersect = R_.orig + R_.dir*uvt.z;
+            float z = intersect.z;
+            if (z>mindist) {
+                mindist = z;
 
 
+                //edw kanoume trace gia to shadow
+
+
+                //SceneCol.rgb = vec3(intersect.x, intersect.y, 1. - (intersect.x - intersect.y));
+                SceneCol.rgb = vec3(intersect.x, intersect.y, intersect.z);
+                vec3 lightDir =  normalize(lightSource.center-intersect);
+                float diffuse = clamp(dot(lightDir, triangleNormal), 0., 1.);
+                SceneCol.rgb *= diffuse * 1.5; 
+            }
+        }      
+    }
+
+    for (int i =  276; i < 516; i += 3) {
+     
+        a = texelFetch(uMeshData, ivec2(i, 0), 0);
+        b = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
+        c = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
+
+        vec3 triangleNormal;
+        vec3 uvt;
+        bool isHit = hitTriangle(R_.orig,R_.dir, a.xyz,b.xyz,c.xyz,uvt, triangleNormal);
+        if (isHit) {
+            vec3 intersect = R_.orig + R_.dir*uvt.z;
+            float z = intersect.z;
+            if (z>mindist) {
+                mindist = z;
+
+
+                //edw kanoume trace gia to shadow
+
+
+
+                //SceneCol.rgb = vec3(intersect.x, intersect.y, 1. - (intersect.x - intersect.y));
+                SceneCol.rgb = vec3(intersect.x, intersect.y, intersect.z);
+                vec3 lightDir =  normalize(lightSource.center-intersect);
+                float diffuse = clamp(dot(lightDir, triangleNormal), 0., 1.);
+                SceneCol.rgb *= diffuse * 1.5; 
+            }
+        }      
+    }
 
 
     return true;
@@ -245,7 +298,7 @@ void main() {
         SceneCol.rgb= vec3(1.0,1.0,1.0);
     }
 
-    //draw mnesh loaded from texture data
+    //draw mesh loaded from texture data
     for (int i = 0; i < 36; i += 3) {
        
         a = texelFetch(uMeshData, ivec2(i, 0), 0);
@@ -259,10 +312,10 @@ void main() {
             vec3 intersect = R_.orig + R_.dir*uvt.z;
             float z = intersect.z;
             if (z>mindist) {
-             mindist = z;
-            //SceneCol.rgb = vec3(intersect.x, intersect.y, 1. - (intersect.x - intersect.y));
-            SceneCol.rgb = vec3(intersect.x, intersect.y, intersect.z);
-            vec3 lightDir =  normalize(lightSource.center-intersect);
+                 mindist = z;
+                //SceneCol.rgb = vec3(intersect.x, intersect.y, 1. - (intersect.x - intersect.y));
+                SceneCol.rgb = vec3(intersect.x, intersect.y, intersect.z);
+                vec3 lightDir =  normalize(lightSource.center-intersect);
                 float diffuse = clamp(dot(lightDir, triangleNormal), 0., 1.);
                 SceneCol.rgb *= diffuse*1.5; 
             }
