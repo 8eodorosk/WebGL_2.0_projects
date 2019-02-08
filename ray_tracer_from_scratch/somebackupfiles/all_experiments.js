@@ -271,56 +271,125 @@ void main() {
         SceneCol.rgb= vec3(1.0,1.0,1.0);
     }
 
+    int flag = 1; 
     //draw mnesh loaded from texture data
     for (int i = 0; i < vertsCount/2; i += 3) {
-       
+        //original translation matrices
+         //a = rotate() * texelFetch(uMeshData, ivec2(i, 0), 0);
+         //b = rotate() * texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
+         //c = rotate() * texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
+
+        // a = frotate(3.14*.5,0.,0.0) * texelFetch(uMeshData, ivec2(i, 0), 0);
+        // b = frotate(3.14*.5,0.,0.0) * texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
+        // c = frotate(3.14*.5,0.,0.0) * texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
+
+        //a = translate(-1.0,0.0,0.) * texelFetch(uMeshData, ivec2(i, 0), 0);
+        //b = translate(-1.0,0.0,0.) * texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
+        //c = translate(-1.0,0.0,0.) * texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
+
         a = texelFetch(uMeshData, ivec2(i, 0), 0);
         b = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
         c = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
 
-        vec3 triangleNormal;
-        vec3 uvt;
-        bool isHit = hitTriangle(R_.orig,R_.dir, a.xyz,b.xyz,c.xyz,uvt, triangleNormal);
-        if (isHit) {
-            vec3 intersect = R_.orig + R_.dir*uvt.z;
-            float z = intersect.z;
-            if (z>mindist) {
-             mindist = z;
-            //SceneCol.rgb = vec3(intersect.x, intersect.y, 1. - (intersect.x - intersect.y));
-            SceneCol.rgb = vec3(intersect.x, intersect.y, intersect.z);
-            vec3 lightDir =  normalize(lightSource.center-intersect);
-                float diffuse = clamp(dot(lightDir, triangleNormal), 0., 1.);
-                SceneCol.rgb *= diffuse*1.5; 
+       
+
+        //alg_1
+        if (flag == 1) {
+            // me ayto ton algorithmo exw glitches
+            vec3 triangleNormal;
+            vec3 uvt;
+            bool isHit = hitTriangle(R_.orig,R_.dir, a.xyz,b.xyz,c.xyz,uvt, triangleNormal);
+            if (isHit) {
+                vec3 intersect = R_.orig + R_.dir*uvt.z;
+                float z = intersect.z;
+                if (z>mindist) {
+                 mindist = z;
+                //SceneCol.rgb = vec3(intersect.x, intersect.y, 1. - (intersect.x - intersect.y));
+                SceneCol.rgb = vec3(intersect.x, intersect.y, intersect.z);
+                vec3 lightDir =  normalize(lightSource.center-intersect);
+                    float diffuse = clamp(dot(lightDir, triangleNormal), 0., 1.);
+                    SceneCol.rgb *= diffuse*1.5; 
+                }
+            }      
+       }
+        
+       //alg_2 
+       if (flag == 2) {
+            // me ayto de moy fwtizei ti deyteri mpala
+            //original intersection test
+            if (isTriangle(R_, a.xyz, b.xyz, c.xyz, hit)){
+                float z = hit.z;
+                if (z > mindist) {
+                    mindist = z;
+                    //SceneCol.rgb = vec3(hit.x, hit.y, 1. - (hit.x - hit.y));
+                    SceneCol.rgb = vec3(hit.x, hit.y, hit.z);
+                    vec3 lightDir =  normalize(lightSource.center-hit);
+                    float diffuse = clamp(dot(lightDir, hit), 0., 1.);
+                    SceneCol.rgb *= diffuse * 10.; 
+                };
             }
-        }      
+        }
     }
 
      for (int i =  vertsCount/2; i < vertsCount; i += 3) {
-     
+    
+        //original translation matrices
+        //a = translate(-2.0,1.0,0.) * rotate() * texelFetch(uMeshData, ivec2(i, 0), 0);
+        //b = translate(-2.0,1.0,0.) * rotate() * texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
+        //c = translate(-2.0,1.0,0.) * rotate() * texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
+
+
         a = texelFetch(uMeshData, ivec2(i, 0), 0);
         b = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
         c = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
 
-        vec3 triangleNormal;
-        vec3 uvt;
-        bool isHit = hitTriangle(R_.orig,R_.dir, a.xyz,b.xyz,c.xyz,uvt, triangleNormal);
-        if (isHit) {
-            vec3 intersect = R_.orig + R_.dir*uvt.z;
-            float z = intersect.z;
-            if (z>mindist) {
-             mindist = z;
-            //SceneCol.rgb = vec3(intersect.x, intersect.y, 1. - (intersect.x - intersect.y));
-            SceneCol.rgb = vec3(intersect.x, intersect.y, intersect.z);
-            vec3 lightDir =  normalize(lightSource.center-intersect);
-            float diffuse = clamp(dot(lightDir, triangleNormal), 0., 1.);
-            SceneCol.rgb *= diffuse * 1.5; 
+
+        //a = translate(-1.0,0.0,0.) * texelFetch(uMeshData, ivec2(i, 0), 0);
+        //b = translate(-1.0,0.0,0.) * texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
+        //c = translate(-1.0,0.0,0.) * texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
+
+        //alg_1
+        if (flag == 1) {
+            vec3 triangleNormal;
+            vec3 uvt;
+            bool isHit = hitTriangle(R_.orig,R_.dir, a.xyz,b.xyz,c.xyz,uvt, triangleNormal);
+            if (isHit) {
+                vec3 intersect = R_.orig + R_.dir*uvt.z;
+                float z = intersect.z;
+                if (z>mindist) {
+                 mindist = z;
+                //SceneCol.rgb = vec3(intersect.x, intersect.y, 1. - (intersect.x - intersect.y));
+                SceneCol.rgb = vec3(intersect.x, intersect.y, intersect.z);
+                vec3 lightDir =  normalize(lightSource.center-intersect);
+                float diffuse = clamp(dot(lightDir, triangleNormal), 0., 1.);
+                SceneCol.rgb *= diffuse * 1.5; 
+                }
+            }      
+        }
+
+        //alg_2 
+        if (flag == 2) {
+            // me ayto de moy fwtizei ti deyteri mpala
+            //original intersection test
+            if (isTriangle(R_, a.xyz, b.xyz, c.xyz, hit)){
+                float z = hit.z;
+                if (z > mindist) {
+                    mindist = z;
+                    //SceneCol.rgb = vec3(hit.x, hit.y, 1. - (hit.x - hit.y));
+                    SceneCol.rgb = vec3(hit.x, hit.y, hit.z);
+                    vec3 lightDir =  normalize(lightSource.center-hit);
+                   //float diffuse = clamp(dot(lightDir, hit), 0., 1.);
+                    float dif = max(0.0, dot(normalize(hit), normalize( vec3(0., 5., 5. ))));
+                    SceneCol.rgb *= dif * 4.; 
+                };
             }
-        }      
+        }
+       
     }
     
     vec3 sky = vec3(0.5, 0.25, 0.1) * (-R_.dir.y);
     //vec3 sky = vec3(0.5, 0.25, 0.1);
-    fragColor.rgb = SceneCol;
+    fragColor.rgb = SceneCol + sky;
     fragColor.a = 1.0;
 }`;
 
