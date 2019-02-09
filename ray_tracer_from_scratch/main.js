@@ -180,6 +180,7 @@ vec3 hitMesh(Ray R_){
 
 vec3 calcShadow(Sphere lightSource, vec3 hitPos){
     vec3 color;
+  
     vec3 lightDir =  normalize(lightSource.center-hitPos);
     Ray shadowRay = Ray(hitPos, lightDir);
 
@@ -265,7 +266,7 @@ bool hitScene(Ray R_, out vec3 hitPos, out vec3 normal, out Material material, S
 }
 
 
-vec3 Trace(Ray ray, Sphere floor, Sphere lightSource){
+vec3 Trace(out Ray ray, Sphere floor, Sphere lightSource){
 
     vec3 hitPos, normal;
     bool isShpere;
@@ -287,6 +288,8 @@ vec3 Trace(Ray ray, Sphere floor, Sphere lightSource){
                     shadow = calcShadow(lightSource, hitPos);
                     color *= material.albedo * attenuation * light *shadow;
                     attenuation *= material.albedo;
+                }else{
+                    color = hitPos;
                 }
             }
 
@@ -298,6 +301,8 @@ vec3 Trace(Ray ray, Sphere floor, Sphere lightSource){
                     shadow = calcShadow(lightSource, hitPos);
                     color *= material.albedo * attenuation*light*shadow;
                     attenuation *= material.albedo;
+                }else{
+                    color = hitPos;
                 }
             }
         }
@@ -320,8 +325,8 @@ void main() {
     Sphere lightSource;
     lightSource.radius = 0.18;
     //lightSource.center = vec3(1.,2.5,2.);
-    lightSource.center = vec3(1.,3.,1.);
-    //lightSource.center= vec4(mv*vec4(4.5*sin(time),1.5,3.*cos(time),1.0*sin(time))).xyz;
+    //lightSource.center = vec3(1.,3.,1.);
+    lightSource.center= vec4(mv*vec4(4.5*sin(time),1.5,3.*cos(time),1.0*sin(time))).xyz;
 
     Sphere floor;
     floor.radius = 1e3;
