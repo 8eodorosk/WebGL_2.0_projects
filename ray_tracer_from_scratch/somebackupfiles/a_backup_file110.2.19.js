@@ -232,16 +232,48 @@ bool hitScene(Ray R_, out vec3 hitPos, out vec3 normal, out Material material, S
                 hitPos1 = intersect;
                 
                 mindist = z;
-                weHitSomething = true;
-                material.type = METAL;
-                material.albedo = vec3(0.6, 0.6, 0.6);
-                normal = triangleNormal;
-                hitPos = hitPos1;
-                isShpere = false;
             }
         }      
-    }      
+    }
     
+
+    //here we check if it intersected the floor which is a sphere and we keep the position of the hitPos
+    vec3 hit = vec3(0.);
+    bool isHit = hitSphere(R_.orig,R_.dir,sphere.center,sphere.radius,hit);
+
+    if(isHit && hit.z > mindist)
+    {
+        mindist = hit.z;
+        sphereNormal = normalize((hit - sphere.center) / sphere.radius);
+    }
+    
+
+
+    //here we have probably have 2 intersection points, one of a sphere, and one of a triangle
+    // we keep the max of them cause the min dist is actually -1000. so we keep the closest hitpos
+    
+    float flag = max(hitPos1.z, hit.z);
+
+    //based of the type of the interection(triangle or sphere) we assign to the mesh or the floor the material type, the normal and all the
+    //information Trace function needs 
+    //if we intersected something we set weHitSomething to true
+
+    if ((flag == hitPos1.z) && (flag > -1000.)) {
+        weHitSomething = true;
+        material.type = METAL;
+        material.albedo = vec3(0.9, 0.9, 0.9);
+        normal = triangleNormal;
+        hitPos = hitPos1;
+        isShpere = false;
+    }
+    else if ((flag == hit.z) && (flag > -1000.)) {
+        weHitSomething = true;
+        material.type = LAMB;
+        material.albedo = vec3(0., 0.9, 0.9);
+        normal = sphereNormal;
+        hitPos = hit;
+        isShpere = true;
+    }
     return weHitSomething;
 }
 
