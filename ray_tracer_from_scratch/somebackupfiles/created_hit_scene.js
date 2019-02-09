@@ -25,20 +25,15 @@ layout(location = 0) out lowp vec4 fragColor;
 #define rmat(a, b) mat3(1, 0, 0, 0, cos(b), -sin(b), 0, sin(b), cos(b)) * mat3(cos(a), 0, sin(a), 0, 1, 0, -sin(a), 0, cos(a))
 
 // Materials
-#define LAMB 0
-#define METAL 1
-#define DIEL 2
+#define LAMB vec3(0., .9, .5);
+#define METAL vec3(0.9, .0, .5);
+#define DIEL vec3(0.5, .9, .0);
 
 
 struct Ray {
   vec3 orig, dir;
 }R_;
 
-struct Material
-{
-    int type;
-    vec3 albedo; 
-};
 
 struct Sphere{
     vec3 center;
@@ -178,37 +173,15 @@ vec3 hitMesh(Ray R_){
 }
 
 
-vec3 calcShadow(Sphere lightSource, vec3 hitPos){
-    vec3 color;
-    vec3 lightDir =  normalize(lightSource.center-hitPos);
-    Ray shadowRay = Ray(hitPos, lightDir);
 
-    vec3 isHitLightDir = hitLightSource(shadowRay,lightSource);
-    vec3 isHitMesh = hitMesh(shadowRay);
-        
-    if (isHitMesh.z > isHitLightDir.z ) {
-        color = vec3(0.4,0.4,0.4);
-    }else{
-        color = vec3(1.,1.,1.);    
-    }
-    return color;
-}
-
-vec3 getLight(vec3 color, Sphere sphere, vec3 intersect, vec3 normal){
-    vec3 lightDir =  normalize(sphere.center-intersect);
-    float diffuse = clamp(dot(lightDir, normal), 0., 1.);
-    return color*diffuse;
-}
-
-
-bool hitScene(Ray R_, out vec3 hitPos, out vec3 normal, out Material material, Sphere sphere, out bool isShpere, Sphere lightSource){  // na thimithw na thesw to isShpere false stin trace synartisi
+bool hitScene(Ray R_, out vec3 hitPos, out vec3 triangleNormal, out vec3 material, Sphere sphere, out bool isShpere){  // na thimithw na thesw to isShpere false stin trace synartisi
         
     vec4 a = vec4(0.0), b = vec4(0.0), c = vec4(0.0);
     float mindist = -1000.;
     bool weHitSomething = false;
     vec3 hitPos1;
-    vec3 triangleNormal = vec3(0.,0.,0.);
-    vec3 sphereNormal;
+    vec3 triangleNormal1 = vec3(0.,0.,0.);
+    vec3 normal;
     
 
     //draw mesh loaded from texture data
@@ -218,8 +191,9 @@ bool hitScene(Ray R_, out vec3 hitPos, out vec3 normal, out Material material, S
         b = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
         c = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
 
+        
         vec3 uvt;
-        bool isHit = hitTriangle(R_.orig,R_.dir, a.xyz,b.xyz,c.xyz,uvt, triangleNormal);
+        bool isHit = hitTriangle(R_.orig,R_.dir, a.xyz,b.xyz,c.xyz,uvt, triangleNormal1);
         if (isHit) {
             vec3 intersect = R_.orig + R_.dir*uvt.z;
             float z = intersect.z;
@@ -237,7 +211,7 @@ bool hitScene(Ray R_, out vec3 hitPos, out vec3 normal, out Material material, S
     if(isHit && hit.z > mindist)
     {
         mindist = hit.z;
-        sphereNormal = (hit - sphere.center) / sphere.radius;
+        normal = (hit - sphere.center) / sphere.radius;
     }
     
 
@@ -247,66 +221,19 @@ bool hitScene(Ray R_, out vec3 hitPos, out vec3 normal, out Material material, S
 
     if ((flag == hitPos1.z) && (flag > -1000.)) {
         weHitSomething = true;
-        material.type = METAL;
-        material.albedo = vec3(0.9, 0.9, 0.9);
-        normal = triangleNormal;
+        material = LAMB;
+        triangleNormal = triangleNormal1;
         hitPos = hitPos1;
         isShpere = false;
     }
     else if ((flag == hit.z) && (flag > -1000.)) {
         weHitSomething = true;
-        material.type = LAMB;
-        material.albedo = vec3(0., 0.9, 0.9);
-        normal = sphereNormal;
+        material = LAMB;
+        triangleNormal = normal;
         hitPos = hit;
         isShpere = true;
     }
     return weHitSomething;
-}
-
-
-vec3 Trace(Ray ray, Sphere floor, Sphere lightSource){
-
-    vec3 hitPos, normal;
-    bool isShpere;
-    Material material;
-    vec3 color = vec3(0.);
-    vec3 attenuation = vec3(1.);
-    vec3 light, shadow;
-
-
-    for(int i=0; i< MAX_BOUNCES; i++){
-
-        if(hitScene(ray, hitPos, normal, material, floor, isShpere, lightSource)){
-            if (material.type == METAL) {
-               
-                vec3 direction = reflect(ray.dir, normal);
-                if (dot(direction,normal) > 0.) {
-                    ray = Ray(hitPos, direction); 
-                    light = getLight(color, lightSource,hitPos, normal);
-                    shadow = calcShadow(lightSource, hitPos);
-                    color *= material.albedo * attenuation * light *shadow;
-                    attenuation *= material.albedo;
-                }
-            }
-
-             if (material.type == LAMB) {
-                vec3 direction = reflect(ray.dir, normal);
-                if (dot(direction,normal) > 0.) {
-                    ray = Ray(hitPos, direction);
-                    light = getLight(color, lightSource,hitPos, normal);
-                    shadow = calcShadow(lightSource, hitPos);
-                    color *= material.albedo * attenuation*light*shadow;
-                    attenuation *= material.albedo;
-                }
-            }
-        }
-        else{
-            color = attenuation;
-        }
-    }
-
-    return color;
 }
 
 
@@ -328,8 +255,8 @@ void main() {
     floor.center = vec3(0., -1e3, 0.);
 
 
-    //vec3 hit = vec3(0.0,0.0,0.0);
-    //vec4 a = vec4(0.0), b = vec4(0.0), c = vec4(0.0);
+    vec3 hit = vec3(0.0,0.0,0.0);
+    vec4 a = vec4(0.0), b = vec4(0.0), c = vec4(0.0);
   
     R_ = Ray(vec3(0.0, 1.0, 6.0), vec3(vuv, -1.));
    
@@ -339,28 +266,118 @@ void main() {
     R_.dir = mat3(uRot) * R_.dir;
     R_.orig = mat3(uRot) * R_.orig;
 
-    //float mindist = -1000.0;
+    float mindist = -1000.0;
 
     
-    //bool isHit2 = hitSphere(R_.orig,R_.dir,floor.center,floor.radius,hit);
+    bool isHit2 = hitSphere(R_.orig,R_.dir,floor.center,floor.radius,hit);
 
-   
+    if(isHit2 && hit.z > mindist)
+    {
+        mindist = hit.z;
+
+        //hit.z -= 0.0001;
+        //vec3 normal = (hit - floor.center)/floor.radius; 
+        
+        vec3 lightDir =  normalize(lightSource.center-hit);
+        Ray shadowRay = Ray(hit, lightDir);
+
+
+
+        vec3 isHitLightDir = hitLightSource(shadowRay,lightSource);
+        vec3 isHitMesh = hitMesh(shadowRay);
+        
+        if (isHitMesh.z > isHitLightDir.z ) {
+            SceneCol.rgb = vec3(0.5,0.5,0.5)*vec3(0.8,0.6,0.8);
+        }else{
+            SceneCol.rgb = vec3(0.8,0.6,0.8);    
+        }
+
+        
+    }
     
 
     //draw light souirce
-    //bool isHit = hitSphere(R_.orig,R_.dir,lightSource.center,lightSource.radius,hit);
+    bool isHit = hitSphere(R_.orig,R_.dir,lightSource.center,lightSource.radius,hit);
 
-    //if(isHit && hit.z > mindist)
-    //{
-    //    mindist = hit.z;
-    //    SceneCol.rgb= vec3(1.0,1.0,1.0);
-   // }
+    if(isHit && hit.z > mindist)
+    {
+        mindist = hit.z;
+        SceneCol.rgb= vec3(1.0,1.0,1.0);
+    }
 
-   vec3 color = Trace(R_, floor, lightSource);
+    //draw mesh loaded from texture data
+    for (int i = 0; i < 36; i += 3) {
+       
+        a = texelFetch(uMeshData, ivec2(i, 0), 0);
+        b = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
+        c = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
+
+        vec3 triangleNormal;
+        vec3 uvt;
+        bool isHit = hitTriangle(R_.orig,R_.dir, a.xyz,b.xyz,c.xyz,uvt, triangleNormal);
+        if (isHit) {
+            vec3 intersect = R_.orig + R_.dir*uvt.z;
+            float z = intersect.z;
+            if (z>mindist) {
+                 mindist = z;
+                //SceneCol.rgb = vec3(intersect.x, intersect.y, 1. - (intersect.x - intersect.y));
+                SceneCol.rgb = vec3(intersect.x, intersect.y, intersect.z);
+                vec3 lightDir =  normalize(lightSource.center-intersect);
+                float diffuse = clamp(dot(lightDir, triangleNormal), 0., 1.);
+                SceneCol.rgb *= diffuse*1.5; 
+            }
+        }      
+    }
+
+    for (int i =  36; i < 276; i += 3) {
+     
+        a = texelFetch(uMeshData, ivec2(i, 0), 0);
+        b = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
+        c = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
+
+        vec3 triangleNormal;
+        vec3 uvt;
+        bool isHit = hitTriangle(R_.orig,R_.dir, a.xyz,b.xyz,c.xyz,uvt, triangleNormal);
+        if (isHit) {
+            vec3 intersect = R_.orig + R_.dir*uvt.z;
+            float z = intersect.z;
+            if (z>mindist) {
+                mindist = z;
+                //SceneCol.rgb = vec3(intersect.x, intersect.y, 1. - (intersect.x - intersect.y));
+                SceneCol.rgb = vec3(intersect.x, intersect.y, intersect.z);
+                vec3 lightDir =  normalize(lightSource.center-intersect);
+                float diffuse = clamp(dot(lightDir, triangleNormal), 0., 1.);
+                SceneCol.rgb *= diffuse * 1.5; 
+            }
+        }      
+    }
+
+    for (int i =  276; i < 516; i += 3) {
+     
+        a = texelFetch(uMeshData, ivec2(i, 0), 0);
+        b = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
+        c = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
+
+        vec3 triangleNormal;
+        vec3 uvt;
+        bool isHit = hitTriangle(R_.orig,R_.dir, a.xyz,b.xyz,c.xyz,uvt, triangleNormal);
+        if (isHit) {
+            vec3 intersect = R_.orig + R_.dir*uvt.z;
+            float z = intersect.z;
+            if (z>mindist) {
+                mindist = z;
+                //SceneCol.rgb = vec3(intersect.x, intersect.y, 1. - (intersect.x - intersect.y));
+                SceneCol.rgb = vec3(intersect.x, intersect.y, intersect.z);
+                vec3 lightDir =  normalize(lightSource.center-intersect);
+                float diffuse = clamp(dot(lightDir, triangleNormal), 0., 1.);
+                SceneCol.rgb *= diffuse * 1.5; 
+            }
+        }      
+    }
     
     vec3 sky = vec3(0.5, 0.25, 0.1) * (-R_.dir.y);
     //vec3 sky = vec3(0.5, 0.25, 0.1);
-    fragColor.rgb = color;
+    fragColor.rgb = SceneCol;
     fragColor.a = 1.0;
 }`;
 
