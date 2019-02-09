@@ -189,7 +189,7 @@ vec3 calcShadow(Sphere lightSource, vec3 hitPos){
     vec3 isHitMesh = hitMesh(shadowRay);
         
     if (isHitMesh.z > isHitLightDir.z ) {
-        color = vec3(0.0,0.0,0.0);
+        color = vec3(0.4,0.4,0.4);
     }else{
         color = vec3(1.,1.,1.);    
     }
@@ -300,7 +300,7 @@ vec3 Trace(out Ray ray, Sphere floor, Sphere lightSource){
                
                //we calculate the new direction
 
-                vec3 direction = normalize(reflect(ray.dir, normal));
+                vec3 direction = reflect(ray.dir, normal);
 
                 //here we check if the new direction and the hitPos normal is >0 then i do all the calculations 
                 //and we start the new ray from the hitPos to the reflected direction
@@ -323,7 +323,7 @@ vec3 Trace(out Ray ray, Sphere floor, Sphere lightSource){
             }
 
              if (material.type == LAMB) {
-                vec3 direction = normalize(reflect(ray.dir, normal));
+                vec3 direction = reflect(ray.dir, normal);
                 if (dot(direction,normal) > 0.) {
                     ray = Ray(hitPos, direction);
                     light = getLight(color, lightSource,hitPos, normal);
@@ -351,7 +351,7 @@ void main() {
     //initialize lightSource, floor, Ray, camera
     Sphere lightSource = Sphere(vec3(1.,3.,1.), 0.18);
     Sphere floor  = Sphere(vec3(0., -1e3, 0.), 1e3);
-    R_ = Ray(vec3(0.0, 0.0, 6.0001), vec3(vuv, -1.));
+    R_ = Ray(vec3(0.0, 1.0, 6.0), vec3(vuv, -1.));
     Camera(R_, vec3(0., 0., 1.), vec3(0., 1., 0.), 90.0, (Res.x / Res.y));
 
     // rotation
@@ -416,7 +416,7 @@ void main() {
 
     // fullscreen quad
     gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-    gl.bufferData(gl.ARRAY_BUFFER, new Int8Array([-3, 1, 1, -3, 1, 1 /*, -4, 2, -4, -4, 2, -4*/ ]), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Int8Array([-4, 2, 2, -4, 2, 2 /*, -4, 2, -4, -4, 2, -4*/ ]), gl.STATIC_DRAW);
     gl.enableVertexAttribArray(0);
     gl.vertexAttribPointer(0, 2, gl.BYTE, !1, 0, 0);
     gl.bindVertexArray(null);
@@ -428,9 +428,6 @@ void main() {
 
     // blender 2.79 Icosphere
     // export -> *.raw (needs to be enable first under settings)
-    
-
-
     const verts = [
         // cube
         0.500000, -0.000000, 1.500000, 0.500000, 2.000000, 1.500000, 0.500000, 2.000000, 0.500000, 
