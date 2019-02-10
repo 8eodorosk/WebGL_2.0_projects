@@ -121,7 +121,68 @@ bool hitTriangle(vec3 orig,vec3 dir,vec3 a,vec3 b,vec3 c,out vec3 uvt,out vec3 t
 
    float t= dot(ac,e)/det;
    uvt = vec3(u,v,t);
+   //uvt = vec3(t, u, v);
    return true;
+}
+
+bool hitTriangleSecond(
+    vec3 orig, vec3 dir, vec3 a, vec3 b, vec3 c,
+    out vec3 uvt, out vec3 N, out vec3 x, out float dist) {
+
+    float eps=1e-8;
+
+    vec3 ab = b - a;
+    vec3 ac = c - a;
+
+    N = normalize(cross(ab, ac));
+
+    dist = dot(a - orig, N) / dot(dir, N);
+    x    = orig + dir * dist;
+
+    vec3 ax = x - a;
+
+    float d00 = dot(ab, ab);
+    float d01 = dot(ab, ac);
+    float d11 = dot(ac, ac);
+    float d20 = dot(ax, ab);
+    float d21 = dot(ax, ac);
+
+    float denom = d00 * d11 - d01 * d01; // determinant
+
+    // if the determinant is negative the triangle is backfacing
+    // if the determinant is close to 0, the ray misses the triangl
+    if ( denom <= eps )
+        return false;
+
+    uvt.y = (d11 * d20 - d01 * d21) / denom;
+    if ( uvt.y < 0.0 || uvt.y > 1.0 )
+        return false;
+
+    uvt.z = (d00 * d21 - d01 * d20) / denom;
+    if ( uvt.z < 0.0 || uvt.z > 1.0 )
+        return false;
+
+    uvt.x = 1.0 - uvt.y - uvt.z;
+    if ( uvt.x < 0.0 || uvt.x > 1.0 )
+        return false;
+
+    return true;
+}
+
+bool IntersectTriangle(Ray ray, vec3 p0, vec3 p1, vec3 p2, out float hit, out vec3 barycentricCoord, out vec3 triangleNormal){
+    vec3 e0 = p1 - p0;
+    vec3 e1 = p0 - p2;
+    triangleNormal = cross( e1, e0 );
+
+    vec3 e2 = ( 1.0 / dot( triangleNormal, ray.dir ) ) * ( p0 - ray.orig );
+    vec3 i  = cross( ray.dir, e2 );
+
+    barycentricCoord.y = dot( i, e1 );
+    barycentricCoord.z = dot( i, e0 );
+    barycentricCoord.x = 1.0 - (barycentricCoord.z + barycentricCoord.y);
+    hit   = dot( triangleNormal, e2 );
+
+    return (hit >  1e-8) && all(greaterThanEqual(barycentricCoord, vec3(0.0)));
 }
 
 
@@ -211,58 +272,132 @@ bool hitScene(Ray R_, out vec3 hitPos, out vec3 normal, out Material material, S
     vec4 a = vec4(0.0), b = vec4(0.0), c = vec4(0.0);
     float mindist = 1000.;
     bool weHitSomething = false;
-    vec3 hitPos1 = vec3(0.),triangleNormal = vec3(0.,0.,0.), sphereNormal;
+    vec3 hitPos1 = vec3(0.),triangleNormal = vec3(0.,0.,0.), sphereNormal, barycentricCoord;
+    
+    
+    int alg = 2;
+
+    if (alg == 1) {
+        //here we chck all the mesh if we hit a triangle if the mesh and we keep the closest hitpoint
+        for (int i = 0; i < 6; i += 3) {
+           
+            a = texelFetch(uMeshData, ivec2(i, 0), 0);
+            b = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
+            c = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
+
+            float hit;
+            bool isHit = IntersectTriangle(R_, a.xyz, b.xyz, c.xyz, hit, barycentricCoord, triangleNormal);
+            if (isHit) {
+
+                vec3 intersect = a.xyz * barycentricCoord.x + b.xyz * barycentricCoord.y + c.xyz * barycentricCoord.z;
+
+                float z = dot(intersect - R_.orig, normalize(R_.dir));
+
+                if (z<mindist && z > 0.001) {
+                    hitPos1 = intersect;
+                    
+                    mindist = z;
+                    weHitSomething = true;
+                    material.type = METAL;
+                    material.albedo = vec3(.0, .8, .8);
+                    normal = triangleNormal;
+                    hitPos = hitPos1;
+                }
+            }      
+        }
+        for (int i = 6; i < vertsCount; i += 3) {
+           
+            a = texelFetch(uMeshData, ivec2(i, 0), 0);
+            b = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
+            c = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
+
+            float hit;
+            bool isHit = IntersectTriangle(R_, a.xyz, b.xyz, c.xyz, hit, barycentricCoord, triangleNormal);
+            if (isHit) {
+
+                vec3 intersect = a.xyz * barycentricCoord.x + b.xyz * barycentricCoord.y + c.xyz * barycentricCoord.z;
+
+                float z = dot(intersect - R_.orig, normalize(R_.dir));
+
+                if (z<mindist && z > 0.001) {
+                    hitPos1 = intersect;
+                    
+                    mindist = z;
+                    weHitSomething = true;
+                    material.type = DIEL;
+                    material.albedo = vec3(.8, .3, .4);
+                    normal = triangleNormal;
+                    hitPos = hitPos1;            
+                }
+            }      
+        }      
+    }
+    if (alg == 2) {
+
+
+
+
+        //here we chck all the mesh if we hit a triangle if the mesh and we keep the closest hitpoint
+        for (int i = 0; i < 6; i += 3) {
+           
+            a = texelFetch(uMeshData, ivec2(i, 0), 0);
+            b = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
+            c = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
+
+            vec3 uvt;
+            vec3 intersect;
+            float z;
+            bool isHit = hitTriangleSecond(R_.orig, R_.dir, a.xyz, b.xyz, c.xyz, uvt, triangleNormal, intersect, z);;
+            if (isHit) {
+
+                if (z<mindist && z > 0.001) {
+                    hitPos1 = intersect;
+                    
+                    mindist = z;
+                    weHitSomething = true;
+                    material.type = METAL;
+                    material.albedo = vec3(.0, .8, .8);
+                    normal = triangleNormal;
+                    hitPos = hitPos1;
+                }
+            }      
+        }
+        for (int i = 6; i < vertsCount; i += 3) {
+           
+            a = texelFetch(uMeshData, ivec2(i, 0), 0);
+            b = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
+            c = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
+
+            vec3 uvt;
+            vec3 intersect;
+            float z;
+            bool isHit = hitTriangleSecond(R_.orig, R_.dir, a.xyz, b.xyz, c.xyz, uvt, triangleNormal, intersect, z);;
+            if (isHit) {
+
+                if (z<mindist && z > 0.001) {
+                    hitPos1 = intersect;
+                    
+                    mindist = z;
+                    weHitSomething = true;
+                    material.type = DIEL;
+                    material.albedo = vec3(.8, .3, .4);
+                    normal = triangleNormal;
+                    hitPos = hitPos1;            
+                }
+            }      
+        }  
+
     
 
-    //here we chck all the mesh if we hit a triangle if the mesh and we keep the closest hitpoint
-    for (int i = 0; i < 6; i += 3) {
-       
-        a = texelFetch(uMeshData, ivec2(i, 0), 0);
-        b = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
-        c = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
 
-        vec3 uvt;
-        bool isHit = hitTriangle(R_.orig,R_.dir, a.xyz,b.xyz,c.xyz,uvt, triangleNormal);
-        if (isHit) {
-            vec3 intersect = uvt;
-            float z = intersect.z;
-            if (z<mindist && z > 0.001) {
-                hitPos1 = intersect;
-                
-                mindist = z;
-                weHitSomething = true;
-                material.type = METAL;
-                material.albedo = vec3(.0, .8, .8);
-                normal = triangleNormal;
-                hitPos = hitPos1;
-            }
-        }      
-    }   
-     for (int i = 6; i < vertsCount; i += 3) {
-       
-        a = texelFetch(uMeshData, ivec2(i, 0), 0);
-        b = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
-        c = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
 
-        vec3 uvt;
-        bool isHit = hitTriangle(R_.orig,R_.dir, a.xyz,b.xyz,c.xyz,uvt, triangleNormal);
-        if (isHit) {
-            vec3 intersect = uvt;
-            float z = intersect.z;
-            if (z<mindist && z > 0.001) {
-                hitPos1 = intersect;
-                
-                mindist = z;
-                weHitSomething = true;
-                material.type = DIEL;
-                material.albedo = vec3(.8, .3, .4);
-                normal = triangleNormal;
-                hitPos = hitPos1;
-            }
-        }      
-    }        
+
+
+
+
+    }
     
-    return weHitSomething;
+   return weHitSomething;
 }
 
 
@@ -286,7 +421,7 @@ vec3 Trace(out Ray ray, Sphere lightSource){
                 //we calculate the new direction
                 vec3 direction = normalize(reflect(ray.dir, normal));
 
-                if (dot(direction,normal) > 0.) {
+                //if (dot(direction,normal) > 0.) {
                     ray = Ray(hitPos, direction); 
                     //light = getLight(color, lightSource,hitPos, normal);
                     //shadow = calcShadow(lightSource, hitPos);
@@ -294,31 +429,31 @@ vec3 Trace(out Ray ray, Sphere lightSource){
                     attenuation *= material.albedo;   
                     //color = normal *light; 
                     
-                }
+               // }
                 
-                else{
+               // else{
 
-                    color = hitPos;
-                }
+                  //  color = hitPos;
+               //}
             }
             if (material.type == DIEL) {
-                 //we calculate the new direction
+                //we calculate the new direction
                 vec3 direction = normalize(reflect(ray.dir, normal));
 
-                if (dot(direction,normal) > 0.) {
+                //if (dot(direction,normal) > 0.) {
                     ray = Ray(hitPos, direction); 
                     //light = getLight(color, lightSource,hitPos, normal);
                     //shadow = calcShadow(lightSource, hitPos);
                     color *= material.albedo * light;
                     attenuation *= material.albedo;   
                     //color = normal *light; 
-                }
+                    
+                //}
                 
-                else{
+               // else{
 
-                    color = hitPos;
-                }
-
+                  //  color = hitPos;
+               //}
             }
         }
        
