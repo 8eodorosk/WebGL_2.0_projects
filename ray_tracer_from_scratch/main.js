@@ -189,7 +189,7 @@ vec3 calcShadow(Sphere lightSource, vec3 hitPos){
     vec3 isHitMesh = hitMesh(shadowRay);
         
     if (isHitMesh.z > isHitLightDir.z ) {
-        color = vec3(0.0,0.0,0.0);
+        color = vec3(0.5,0.5,0.5);
     }else{
         color = vec3(1.,1.,1.);    
     }
@@ -206,14 +206,12 @@ vec3 getLight(vec3 color, Sphere sphere, vec3 intersect, vec3 normal){
 
 // we check if a ray intersected the scene, if it does we return the hitPos of the inteersection,
 // the normal of that hitpoint the material and this bool isSphere if it intersectesd the floor, which is a giant sphere(in order to make it a floor)
-bool hitScene(Ray R_, out vec3 hitPos, out vec3 normal, out Material material, Sphere sphere, out bool isShpere, Sphere lightSource){  // na thimithw na thesw to isShpere false stin trace synartisi
+bool hitScene(Ray R_, out vec3 hitPos, out vec3 normal, out Material material, Sphere lightSource){  // na thimithw na thesw to isShpere false stin trace synartisi
         
     vec4 a = vec4(0.0), b = vec4(0.0), c = vec4(0.0);
     float mindist = -1000.;
     bool weHitSomething = false;
-    vec3 hitPos1 = vec3(0.);
-    vec3 triangleNormal = vec3(0.,0.,0.);
-    vec3 sphereNormal;
+    vec3 hitPos1 = vec3(0.),triangleNormal = vec3(0.,0.,0.), sphereNormal;
     
 
     //here we chck all the mesh if we hit a triangle if the mesh and we keep the closest hitpoint
@@ -234,10 +232,9 @@ bool hitScene(Ray R_, out vec3 hitPos, out vec3 normal, out Material material, S
                 mindist = z;
                 weHitSomething = true;
                 material.type = METAL;
-                material.albedo = vec3(0.6, 0.6, 0.6);
+                material.albedo = vec3(.0, .8, .8);
                 normal = triangleNormal;
                 hitPos = hitPos1;
-                isShpere = false;
             }
         }      
     }      
@@ -248,48 +245,37 @@ bool hitScene(Ray R_, out vec3 hitPos, out vec3 normal, out Material material, S
 
 
 //Trace is the main function of the max bounces
-vec3 Trace(out Ray ray, Sphere floor, Sphere lightSource){
+vec3 Trace(out Ray ray, Sphere lightSource){
 
     vec3 hitPos, normal;
     bool isShpere;
     Material material;
-    vec3 color = vec3(0.);
+    vec3 color = vec3(1.);
     vec3 attenuation = vec3(1.);
-    vec3 light, shadow;
+    vec3 light = vec3(1.,1.,1.), shadow = vec3(1.,1.,1.);
 
     //this if for every ray to bounce 4 times.(hopefully)
     for(int i=0; i< MAX_BOUNCES; i++){
         
         // we check if we hit something
-        if(hitScene(ray, hitPos, normal, material, floor, isShpere, lightSource)){
+        if(hitScene(ray, hitPos, normal, material, lightSource)){
 
-            //we check the material type(if it is metal it is refering to the mesh)
-            if (material.type == METAL) {
                
-               //we calculate the new direction
+            //we calculate the new direction
 
-                vec3 direction = normalize(reflect(ray.dir, normal));
+            vec3 direction = normalize(reflect(ray.dir, normal));
 
-                //here we check if the new direction and the hitPos normal is >0 then i do all the calculations 
-                //and we start the new ray from the hitPos to the reflected direction
+            //here we check if the new direction and the hitPos normal is >0 then i do all the calculations 
+            //and we start the new ray from the hitPos to the reflected direction
 
-                // HERE is the problem for some reason it passes the dot product !!!!!!!
-                //and it enters in the else where it assigns the color to hitPos  !!!!!!!
-
-                if (dot(direction,normal) > 0.) {
-                    ray = Ray(hitPos, direction); 
-                    light = getLight(color, lightSource,hitPos, normal);
-                    shadow = calcShadow(lightSource, hitPos);
-                    color *= material.albedo * attenuation * light *shadow;
-                    //color = hitPos;
-                    //attenuation *= material.albedo;
-                }
                 
-                else{
-
-                    color = hitPos;
-                }
-            }
+            ray = Ray(hitPos, direction); 
+            //light = getLight(color, lightSource,hitPos, normal);
+            //shadow = calcShadow(lightSource, hitPos);
+            color *= material.albedo * attenuation *hitPos;
+            //color = hitPos;
+            attenuation *= material.albedo;
+              
         }
 
         else{
@@ -307,8 +293,8 @@ void main() {
 
     //initialize lightSource, floor, Ray, camera
     Sphere lightSource = Sphere(vec3(1.,3.,1.), 0.18);
-    Sphere floor  = Sphere(vec3(0., -1e3, 0.), 1e3);
-    R_ = Ray(vec3(0.0, 0.0, 6.0001), vec3(vuv, -1.));
+    //Sphere floor  = Sphere(vec3(0., -1e3, 0.), 1e3);
+    R_ = Ray(vec3(0.0, 1.0, 6.0001), vec3(vuv, -1.));
     Camera(R_, vec3(0., 0., 1.), vec3(0., 1., 0.), 90.0, (Res.x / Res.y));
 
     // rotation
@@ -316,7 +302,7 @@ void main() {
     R_.orig = mat3(uRot) * R_.orig;
 
     //color coming from the trace function
-    vec3 color = Trace(R_, floor, lightSource);
+    vec3 color = Trace(R_, lightSource);
 
     fragColor.rgb = color;
     fragColor.a = 1.0;
@@ -389,7 +375,7 @@ void main() {
 
 
 
-    const verts = [
+    const verts1 = [
         -2.500, 0.250, -2.500, -2.500, 0.250, 2.500, -2.500, 0.350, 2.500, 
         -2.500, 0.350, 2.500, -2.500, 0.350, -2.500, -2.500, 0.250, -2.500, 
         -2.500, 0.350, -2.500, -2.500, 0.350, 2.500, 2.500, 0.350, 2.500, 
@@ -576,7 +562,7 @@ void main() {
         1.150, 0.450, 0.030, 1.299, 0.651, 0.138, 1.069, 0.612, 0.280, 
     ];
 
-    const verts1 = [
+    const verts = [
         // cube
         0.500000, -0.000000, 1.500000, 0.500000, 2.000000, 1.500000, 0.500000, 2.000000, 0.500000, 
         0.500000, 2.000000, 0.500000, 0.500000, -0.000000, 0.500000, 0.500000, -0.000000, 1.500000, 
