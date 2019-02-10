@@ -139,11 +139,11 @@ void Camera(out Ray ray, vec3 lookAt, vec3 up, float angle, float aspect) {
 //return intersection point with lightSource for the shadow ray
 vec3 hitLightSource(Ray R_, Sphere sphere){
     vec3 hit = vec3(0.0,0.0,0.0);
-    float mindist = -1000.;
+    float mindist = 1000.;
     vec3 intersect;
     bool isHit = hitSphere(R_.orig,R_.dir,sphere.center,sphere.radius,hit);
 
-    if(isHit && hit.z > mindist)
+    if(isHit && hit.z < mindist && hit.z > 0.001)
     {
         intersect = hit;
         
@@ -155,7 +155,7 @@ vec3 hitLightSource(Ray R_, Sphere sphere){
 
 //return intersection point with the mesh for the shadow ray
 vec3 hitMesh(Ray R_){
-    float mindist = -1000.;
+    float mindist = 1000.;
     vec4 a = vec4(0.0), b = vec4(0.0), c = vec4(0.0);
     vec3 intersect = vec3(0.0,0.0,0.0);
 
@@ -168,9 +168,9 @@ vec3 hitMesh(Ray R_){
         vec3 uvt;
         bool isHit = hitTriangle(R_.orig,R_.dir, a.xyz,b.xyz,c.xyz,uvt, triangleNormal);
         if (isHit) {
-            intersect = R_.orig + R_.dir*uvt.z;
+            intersect = uvt;
             float z = intersect.z;
-            if (z>mindist) {
+            if (z < mindist && z> 0.001 ) {
              mindist = z;
             }
         }      
@@ -188,7 +188,7 @@ vec3 calcShadow(Sphere lightSource, vec3 hitPos){
     vec3 isHitLightDir = hitLightSource(shadowRay,lightSource);
     vec3 isHitMesh = hitMesh(shadowRay);
         
-    if (isHitMesh.z > isHitLightDir.z ) {
+    if (length(isHitMesh.z) < length(isHitLightDir.z) ) {
         color = vec3(0.5,0.5,0.5);
     }else{
         color = vec3(1.,1.,1.);    
@@ -209,13 +209,13 @@ vec3 getLight(vec3 color, Sphere sphere, vec3 intersect, vec3 normal){
 bool hitScene(Ray R_, out vec3 hitPos, out vec3 normal, out Material material, Sphere lightSource){  // na thimithw na thesw to isShpere false stin trace synartisi
         
     vec4 a = vec4(0.0), b = vec4(0.0), c = vec4(0.0);
-    float mindist = -1000.;
+    float mindist = 1000.;
     bool weHitSomething = false;
     vec3 hitPos1 = vec3(0.),triangleNormal = vec3(0.,0.,0.), sphereNormal;
     
 
     //here we chck all the mesh if we hit a triangle if the mesh and we keep the closest hitpoint
-    for (int i = 0; i < vertsCount; i += 3) {
+    for (int i = 0; i < 6; i += 3) {
        
         a = texelFetch(uMeshData, ivec2(i, 0), 0);
         b = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
@@ -224,9 +224,9 @@ bool hitScene(Ray R_, out vec3 hitPos, out vec3 normal, out Material material, S
         vec3 uvt;
         bool isHit = hitTriangle(R_.orig,R_.dir, a.xyz,b.xyz,c.xyz,uvt, triangleNormal);
         if (isHit) {
-            vec3 intersect = R_.orig + R_.dir*uvt.z;
+            vec3 intersect = uvt;
             float z = intersect.z;
-            if (z>mindist) {
+            if (z<mindist && z > 0.001) {
                 hitPos1 = intersect;
                 
                 mindist = z;
@@ -237,7 +237,30 @@ bool hitScene(Ray R_, out vec3 hitPos, out vec3 normal, out Material material, S
                 hitPos = hitPos1;
             }
         }      
-    }      
+    }   
+     for (int i = 6; i < vertsCount; i += 3) {
+       
+        a = texelFetch(uMeshData, ivec2(i, 0), 0);
+        b = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
+        c = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
+
+        vec3 uvt;
+        bool isHit = hitTriangle(R_.orig,R_.dir, a.xyz,b.xyz,c.xyz,uvt, triangleNormal);
+        if (isHit) {
+            vec3 intersect = uvt;
+            float z = intersect.z;
+            if (z<mindist && z > 0.001) {
+                hitPos1 = intersect;
+                
+                mindist = z;
+                weHitSomething = true;
+                material.type = DIEL;
+                material.albedo = vec3(.8, .3, .4);
+                normal = triangleNormal;
+                hitPos = hitPos1;
+            }
+        }      
+    }        
     
     return weHitSomething;
 }
@@ -255,32 +278,50 @@ vec3 Trace(out Ray ray, Sphere lightSource){
     vec3 light = vec3(1.,1.,1.), shadow = vec3(1.,1.,1.);
 
     //this if for every ray to bounce 4 times.(hopefully)
-    for(int i=0; i< MAX_BOUNCES; i++){
+    for(int i=0; i< 4; i++){
         
         // we check if we hit something
         if(hitScene(ray, hitPos, normal, material, lightSource)){
+            if (material.type == METAL) {
+                //we calculate the new direction
+                vec3 direction = normalize(reflect(ray.dir, normal));
 
-               
-            //we calculate the new direction
-
-            vec3 direction = normalize(reflect(ray.dir, normal));
-
-            //here we check if the new direction and the hitPos normal is >0 then i do all the calculations 
-            //and we start the new ray from the hitPos to the reflected direction
-
+                if (dot(direction,normal) > 0.) {
+                    ray = Ray(hitPos, direction); 
+                    //light = getLight(color, lightSource,hitPos, normal);
+                    //shadow = calcShadow(lightSource, hitPos);
+                    color *= material.albedo * light;
+                    attenuation *= material.albedo;   
+                    //color = normal *light; 
+                    
+                }
                 
-            ray = Ray(hitPos, direction); 
-            //light = getLight(color, lightSource,hitPos, normal);
-            //shadow = calcShadow(lightSource, hitPos);
-            color *= material.albedo * attenuation *hitPos;
-            //color = hitPos;
-            attenuation *= material.albedo;
-              
-        }
+                else{
 
-        else{
-            color = attenuation;
+                    color = hitPos;
+                }
+            }
+            if (material.type == DIEL) {
+                 //we calculate the new direction
+                vec3 direction = normalize(reflect(ray.dir, normal));
+
+                if (dot(direction,normal) > 0.) {
+                    ray = Ray(hitPos, direction); 
+                    //light = getLight(color, lightSource,hitPos, normal);
+                    //shadow = calcShadow(lightSource, hitPos);
+                    color *= material.albedo * light;
+                    attenuation *= material.albedo;   
+                    //color = normal *light; 
+                }
+                
+                else{
+
+                    color = hitPos;
+                }
+
+            }
         }
+       
     }
 
     return color;
@@ -291,11 +332,10 @@ void main() {
     //try diferent UV coordinates
 
 
-    //initialize lightSource, floor, Ray, camera
-    Sphere lightSource = Sphere(vec3(1.,3.,1.), 0.18);
-    //Sphere floor  = Sphere(vec3(0., -1e3, 0.), 1e3);
-    R_ = Ray(vec3(0.0, 1.0, 6.0001), vec3(vuv, -1.));
-    Camera(R_, vec3(0., 0., 1.), vec3(0., 1., 0.), 90.0, (Res.x / Res.y));
+    //initialize lightSource Ray, camera
+    Sphere lightSource = Sphere(vec3(-1.,2.,3.), 0.18);
+    R_ = Ray(vec3(0.0, 0.0, 6.0001), vec3(vuv, 1.));
+    Camera(R_, vec3(0., 1., 0.), vec3(0., 1., 0.), 90.0, (Res.x / Res.y));
 
     // rotation
     R_.dir = mat3(uRot) * R_.dir;
@@ -309,15 +349,8 @@ void main() {
 }`;
 
     const canvas = document.getElementById('c');
-    const gl = canvas.getContext('webgl2', {
-        alpha: !1,
-        depth: !1,
-        stencil: !1,
-        antialias: !1,
-        premultipliedAlpha: !1,
-        presereDrawingBuffer: !1,
-        failIfMajorPerformanceCaveat: !1
-    });
+    const gl = canvas.getContext('webgl2');
+    
 
     const { width, height } = canvas.getBoundingClientRect();
     console.log(width, height)
@@ -562,7 +595,13 @@ void main() {
         1.150, 0.450, 0.030, 1.299, 0.651, 0.138, 1.069, 0.612, 0.280, 
     ];
 
+ 
+    //cube
     const verts = [
+
+        //plane
+        -6.600000, -0.000001, 6.599999,  6.599999, 0.000000, 6.600000, 6.600000, 0.000001, -6.599999, 
+        6.600000, 0.000001, -6.599999, -6.599999, -0.000000, -6.600000,  -6.600000, -0.000001, 6.599999, 
         // cube
         0.500000, -0.000000, 1.500000, 0.500000, 2.000000, 1.500000, 0.500000, 2.000000, 0.500000, 
         0.500000, 2.000000, 0.500000, 0.500000, -0.000000, 0.500000, 0.500000, -0.000000, 1.500000, 
@@ -577,9 +616,7 @@ void main() {
         1.500000, 2.000000, 0.500000, 0.500000, 2.000000, 0.500000, 0.500000, 2.000000, 1.500000, 
         0.500000, 2.000000, 1.500000, 1.500000, 2.000000, 1.500000, 1.500000, 2.000000, 0.500000, 
 
-        //plane
-        // -6.600000, -0.000001, 6.599999,  6.599999, 0.000000, 6.600000, 6.600000, 0.000001, -6.599999, 
-        // 6.600000, 0.000001, -6.599999, -6.599999, -0.000000, -6.600000,  -6.600000, -0.000001, 6.599999, 
+       
 
         //icosphere1
         1.500000, 0.000000, -0.500000, 1.925323, 0.149346, -0.190989, 1.337544, 0.149346, -0.000005, 
@@ -746,7 +783,8 @@ void main() {
         -0.574677, 0.149346, 0.809011, -0.276393, 0.552781, 1.025725, -0.737131, 0.474262, 1.309012, 
     ];
 
-    //remember from blender rotate 180 degrees in y, 180 degrees in z and 90degrees in x axis before exporting
+    console.log(verts.length/3)
+;    //remember from blender rotate 180 degrees in y, 180 degrees in z and 90degrees in x axis before exporting
    
 
     const meshVerts = new Float32Array(verts);

@@ -414,6 +414,7 @@
 
   // Setup some matrices (stole values from jimmy|rig)
     var matrix     = new Float32Array([6.123234262925839e-17, 0, 1, 0, -0.8660253882408142, 0.5, 5.302876566937394e-17, 0, -0.5, -0.8660253882408142, 3.0616171314629196e-17, 0, 6.535898208618164, 19.320507049560547, -4.0020835038019837e-16, 1]);
+    console.log(matrix);
     var matrix2    = new Float32Array([1.7777777910232544,0,0,0,0,1,0,0,0,0,0,-0.49950000643730164,0,0,1,0.5005000233650208]);
     var viewportMV = new Float32Array(matrix); 
     var accum_count=1, diff=true, abort=false;
