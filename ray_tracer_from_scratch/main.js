@@ -281,26 +281,13 @@ vec3 Trace(out Ray ray, Sphere floor, Sphere lightSource){
                     light = getLight(color, lightSource,hitPos, normal);
                     shadow = calcShadow(lightSource, hitPos);
                     color *= material.albedo * attenuation * light *shadow;
-                    attenuation *= material.albedo;
+                    //color = hitPos;
+                    //attenuation *= material.albedo;
                 }
                 
                 else{
 
                     color = hitPos;
-                }
-            }
-
-             if (material.type == LAMB) {
-                vec3 direction = normalize(reflect(ray.dir, normal));
-                if (dot(direction,normal) > 0.) {
-                    ray = Ray(hitPos, direction);
-                    light = getLight(color, lightSource,hitPos, normal);
-                    shadow = calcShadow(lightSource, hitPos);
-                    color *= material.albedo * attenuation*light*shadow;
-                    attenuation *= material.albedo;
-                }
-                else{
-                   color = hitPos;
                 }
             }
         }
