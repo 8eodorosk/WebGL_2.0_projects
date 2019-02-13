@@ -246,7 +246,7 @@ bool hitScene(Ray R_, out vec3 hitPos, out vec3 normal, out Material material, S
             bN = texelFetchOffset(uNormData, ivec2(i, 0), 0, ivec2(1, 0));
             cN = texelFetchOffset(uNormData, ivec2(i, 0), 0, ivec2(2, 0));
 
-            triangleNormal = normalize(normalize(aN.xyz) + normalize(bN.xyz) + normalize(cN.xyz));
+            //triangleNormal = normalize(normalize(aN.xyz) + normalize(bN.xyz) + normalize(cN.xyz));
 
             vec3 uvt;
             vec3 intersect;
