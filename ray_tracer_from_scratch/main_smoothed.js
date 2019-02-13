@@ -72,7 +72,7 @@ bool hitTriangleSecond( vec3 orig, vec3 dir, vec3 a, vec3 b, vec3 c,
     vec3 ac = c - a;
 
 
-    //N = normalize(cross(ab, ac));
+    N = normalize(cross(ab, ac));
     //N = normalize(N);
 
     dist = dot(a - orig, N) / dot(dir, N);
@@ -104,7 +104,8 @@ bool hitTriangleSecond( vec3 orig, vec3 dir, vec3 a, vec3 b, vec3 c,
     uvt.x = 1.0 - uvt.y - uvt.z;
     if ( uvt.x < 0.0 || uvt.x > 1.0 )
         return false;
-
+    
+   // N = N*uvt;
     return true;
 }
 
@@ -209,33 +210,33 @@ bool hitScene(Ray R_, out vec3 hitPos, out vec3 normal, out Material material, S
     if (alg == 2) {
 
         //here we chck all the mesh if we hit a triangle if the mesh and we keep the closest hitpoint
-        for (int i = 0; i < 6; i += 3) {
+       // for (int i = 0; i < 6; i += 3) {
            
-            a = texelFetch(uMeshData, ivec2(i, 0), 0);
-            b = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
-            c = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
+       //     a = texelFetch(uMeshData, ivec2(i, 0), 0);
+       //     b = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
+       //     c = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
 
 
 
-            vec3 uvt;
-            vec3 intersect;
-            float z;
-            bool isHit = hitTriangleSecond(R_.orig, R_.dir, a.xyz, b.xyz, c.xyz, uvt, triangleNormal, intersect, z);;
-            if (isHit) {
+        //    vec3 uvt;
+        //    vec3 intersect;
+        //    float z;
+        //    bool isHit = hitTriangleSecond(R_.orig, R_.dir, a.xyz, b.xyz, c.xyz, uvt, triangleNormal, intersect, z);;
+        //    if (isHit) {
 
-                if (z<mindist && z > 0.001) {
-                    hitPos1 = intersect;
+        //        if (z<mindist && z > 0.001) {
+        //            hitPos1 = intersect;
                     
-                    mindist = z;
-                    weHitSomething = true;
-                    material.type = METAL;
-                    material.albedo = vec3(.7, .7, .7);
-                    normal = triangleNormal;
-                    hitPos = hitPos1;
-                }
-            }      
-        }
-        for (int i = 6; i < vertsCount; i += 3) {
+        //            mindist = z;
+        //            weHitSomething = true;
+        //            material.type = METAL;
+        //            material.albedo = vec3(.7, .7, .7);
+        //            normal = triangleNormal;
+        //            hitPos = hitPos1;
+        //        }
+        //    }      
+        //}
+        for (int i = 0; i < vertsCount; i += 3) {
            
             a = texelFetch(uMeshData, ivec2(i, 0), 0);
             b = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
@@ -245,7 +246,7 @@ bool hitScene(Ray R_, out vec3 hitPos, out vec3 normal, out Material material, S
             bN = texelFetchOffset(uNormData, ivec2(i, 0), 0, ivec2(1, 0));
             cN = texelFetchOffset(uNormData, ivec2(i, 0), 0, ivec2(2, 0));
 
-            triangleNormal = (aN.xyz + bN.xyz + cN.xyz) / 3.;
+            triangleNormal = normalize(normalize(aN.xyz) + normalize(bN.xyz) + normalize(cN.xyz));
 
             vec3 uvt;
             vec3 intersect;
@@ -256,11 +257,16 @@ bool hitScene(Ray R_, out vec3 hitPos, out vec3 normal, out Material material, S
                 if (z<mindist && z > 0.001) {
                     hitPos1 = intersect;
                     
+                    
+
+
                     mindist = z;
                     weHitSomething = true;
                     material.type = DIEL;
                     material.albedo = vec3(.8, .3, .4);
-                    normal = triangleNormal;
+                    normal = aN.xyz*uvt.x + bN.xyz*uvt.y + cN.xyz*uvt.z;
+
+                    //normal = triangleNormal;
                     hitPos = hitPos1;            
                 }
             }      
