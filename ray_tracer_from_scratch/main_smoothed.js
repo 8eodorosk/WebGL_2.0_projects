@@ -49,14 +49,14 @@ struct Sphere{
 };
 
 //intersection test with spheres
-bool hitSphere(vec3 orig,vec3 dir,vec3 center,float r,out vec3 intersect){
+bool hitSphere(vec3 orig,vec3 dir,vec3 center,float r,out vec3 intersect, out float t){
     vec3 oc = orig - center;
     float b = dot(oc,dir);
     float c = dot(oc,oc) - r * r;
     if(c>0.0 && b > 0.0) return false;
     float discriminant = b*b -c;
     if(discriminant < 0.0) return false;
-    float t= -b-sqrt(discriminant);
+    t= -b-sqrt(discriminant);
     if(t<0.0) return false;
     intersect = orig + t*dir;
     return true;  
@@ -114,7 +114,7 @@ bool hitTriangleSecond( vec3 orig, vec3 dir, vec3 a, vec3 b, vec3 c,
 
 void Camera(out Ray ray, vec3 lookAt, vec3 up, float angle, float aspect) {
 
-    vec3 g = normalize(lookAt - ray.orig);  // Forward vector
+    vec3 g = normalize(lookAt - ray.orig);  // Forward vector, when it points to the center of the screen
     vec3 u = normalize(cross(g, up));       // Right vector
     vec3 v = normalize(cross(u, g));        // camera Up vector 
     u = u * tan(radians(angle * .5));
@@ -124,24 +124,22 @@ void Camera(out Ray ray, vec3 lookAt, vec3 up, float angle, float aspect) {
 }
 
 //return intersection point with lightSource for the shadow ray
-vec3 hitLightSource(Ray R_, Sphere sphere){
+float hitLightSource(Ray R_, Sphere sphere){
     vec3 hit = vec3(0.0,0.0,0.0);
     float mindist = 1000.;
     vec3 intersect;
-    bool isHit = hitSphere(R_.orig,R_.dir,sphere.center,sphere.radius,hit);
+    float z;
+    bool isHit = hitSphere(R_.orig,R_.dir,sphere.center,sphere.radius,hit, z);
 
-    if(isHit && hit.z < mindist && hit.z > 0.001)
-    {
-        intersect = hit;
-        
-    }
-  
-    return intersect; 
+    if (isHit) {
+        if (z<mindist && z > 0.001)  mindist = z;
+    } 
+    return mindist; 
 }
 
 
 //return intersection point with the mesh for the shadow ray
-vec3 hitMesh(Ray R_){
+float hitMesh(Ray R_){
     float mindist = 1000.;
     vec4 a = vec4(0.0), b = vec4(0.0), c = vec4(0.0);
     vec3 intersect = vec3(0.0,0.0,0.0);
@@ -155,17 +153,13 @@ vec3 hitMesh(Ray R_){
         vec3 uvt;
         float z;
 
-     
-        bool isHit = hitTriangleSecond(R_.orig,R_.dir, a.xyz,b.xyz,c.xyz,uvt, triangleNormal, intersect, z);
+        bool isHit = hitTriangleSecond(R_.orig, R_.dir, a.xyz, b.xyz, c.xyz, uvt, triangleNormal, intersect, z);;
         if (isHit) {
-            intersect = uvt;
-            float z = intersect.z;
-            if (z < mindist && z> 0.001 ) {
-             mindist = z;
-            }
-        }      
+            if (z<mindist && z > 0.001)  mindist = z;
+        } 
+
     }
-    return intersect;
+    return mindist;
 }
 
 //this is where if it is shadow we multiply the color with vec3(.4,.4,.4) else with vec3(1.,1.,1.,) so it does not affect the color if its not a shadow
@@ -175,10 +169,10 @@ vec3 calcShadow(Sphere lightSource, vec3 hitPos){
     vec3 lightDir =  normalize(lightSource.center-hitPos);
     Ray shadowRay = Ray(hitPos, lightDir);
 
-    vec3 isHitLightDir = hitLightSource(shadowRay,lightSource);
-    vec3 isHitMesh = hitMesh(shadowRay);
+    float isHitLight = hitLightSource(shadowRay,lightSource);
+    float isHitMesh = hitMesh(shadowRay);
         
-    if (length(isHitMesh.z) < length(isHitLightDir.z) ) {
+    if (isHitMesh < isHitLight) {
         color = vec3(0.5,0.5,0.5);
     }else{
         color = vec3(1.,1.,1.);    
@@ -257,9 +251,6 @@ bool hitScene(Ray R_, out vec3 hitPos, out vec3 normal, out Material material, S
                 if (z<mindist && z > 0.001) {
                     hitPos1 = intersect;
                     
-                    
-
-
                     mindist = z;
                     weHitSomething = true;
                     material.type = DIEL;
@@ -324,8 +315,8 @@ vec3 Trace(out Ray ray, Sphere lightSource){
                 //if (dot(direction,normal) > 0.) {
                     ray = Ray(hitPos, direction); 
                     light = getLight(color, lightSource,hitPos, normal);
-                    //shadow = calcShadow(lightSource, hitPos);
-                    color *= material.albedo * light;
+                    shadow = calcShadow(lightSource, hitPos);
+                    color *= material.albedo * light*shadow;
                     attenuation *= material.albedo;   
                     //color = normal *light; 
                     
@@ -345,8 +336,8 @@ vec3 Trace(out Ray ray, Sphere lightSource){
                 //if (dot(direction,normal) > 0.) {
                     ray = Ray(hitPos, direction); 
                     light = getLight(color, lightSource,hitPos, normal);
-                    //shadow = calcShadow(lightSource, hitPos);
-                    color *= material.albedo * light;
+                    shadow = calcShadow(lightSource, hitPos);
+                    color *= material.albedo * light*shadow;
                     attenuation *= material.albedo;   
                     //color = normal *light; 
                     
@@ -1014,9 +1005,28 @@ void main() {
     cEv('mousedown', mDown, !1);
     cEv('mouseup', mUp, !1);
 
+
+
+    const fpsElem = document.querySelector("#fps");
+
+    let then = 0;
+
+    function render(now){
+        now *= 0.001;
+        const deltaTime = now-then;
+        then = now;
+        const fps = 1/deltaTime;
+        fpsElem.textContent = fps.toFixed(1);
+
+        draw(now);
+
+        requestAnimationFrame(render);
+    }
+    requestAnimationFrame(render);
+
     // animation
     const draw = (clock) => {
-        clock *= 0.001;
+        // clock *= 0.001;
         gl.viewport(0.0, 0.0, gl.drawingBufferWidth, gl.drawingBufferHeight);
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -1029,7 +1039,7 @@ void main() {
         gl.uniform2f(mouse_loc, mousePosition[0], mousePosition[1]);
         gl.uniform2f(res_loc, width, height);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 3);
-        requestAnimationFrame(draw);
+        // requestAnimationFrame(draw);
     };
-    requestAnimationFrame(draw);
+    // requestAnimationFrame(draw);
 })()

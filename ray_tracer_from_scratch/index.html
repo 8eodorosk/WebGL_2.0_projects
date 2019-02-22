@@ -1,11 +1,29 @@
 <!DOCTYPE html>
 <html>
 <head>
+	<style type="text/css">
+		#container {
+		  position: relative;   /* needed so child elements use this as their base */
+		}
+		#hud {
+		  position: absolute;
+		  left: 5px;
+		  top: 5px;
+		  background: rgba(0, 0, 0, 0.5);  /* 50% opaque black */
+		  color: white;
+		  padding: .5em;
+		  font-family: monospace;
+		  border-radius: .5em;
+		}
+	</style>
 	<title></title>
 </head>
 <body>
 
-		<canvas id="c"></canvas>
+		<div id="container"> 
+			<canvas id="c"></canvas>
+			<div id="hud">fps: <span id="fps"></span></div>
+		</div>
 		<script type="text/javascript" src="glMatrix-0.9.5.max.js"></script>
 		<!-- <script type="text/javascript" src="main.js"></script> -->
 		<script type="text/javascript" src="main_smoothed.js"></script>
