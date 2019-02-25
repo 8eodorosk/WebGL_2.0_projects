@@ -48,17 +48,28 @@ struct Sphere{
     float radius;
 };
 
+
 //intersection test with spheres
+//An kati den paei kala allaxa th synartisi poy ypologizei to ray-sphere intersection
+//!!!!!!!!!!!!!!!!!!!!!
 bool hitSphere(vec3 orig,vec3 dir,vec3 center,float r,out vec3 intersect, out float t){
+
     vec3 oc = orig - center;
-    float b = dot(oc,dir);
+    float a = dot(dir, dir);
+    float b = 2. * dot(oc,dir);
     float c = dot(oc,oc) - r * r;
+
     if(c>0.0 && b > 0.0) return false;
-    float discriminant = b*b -c;
+    float discriminant = b*b -4.*a*c;
+
     if(discriminant < 0.0) return false;
-    t= -b-sqrt(discriminant);
+
+    t= (-b-sqrt(discriminant))/(2.*a);
+
     if(t<0.0) return false;
+
     intersect = orig + t*dir;
+
     return true;  
 }
 
