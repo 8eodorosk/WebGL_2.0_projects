@@ -125,8 +125,8 @@ bool hitTriangleSecond( vec3 orig, vec3 dir, vec3 a, vec3 b, vec3 c,
 
 void Camera(out Ray ray, vec3 lookAt, vec3 up, float angle, float aspect) {
 
-    vec3 g = normalize(lookAt - ray.orig);  // Forward vector, when it points to the center of the screen
-    vec3 u = normalize(cross(g, up));       // Right vector
+    vec3 g = normalize(lookAt - ray.orig);  // Camera Forward vector
+    vec3 u = normalize(cross(g, up));       // Camera Right vector
     vec3 v = normalize(cross(u, g));        // camera Up vector 
     u = u * tan(radians(angle * .5));
     v = v * tan(radians(angle * .5)) / aspect;
@@ -373,6 +373,7 @@ void main() {
     //initialize lightSource Ray, camera
     Sphere lightSource = Sphere(vec3(-1.,2.,3.), 0.18);
     R_ = Ray(vec3(0.0, 3.0, 6.0001), vec3(vuv, -1.));
+    // void Camera(out Ray ray, vec3 lookAt, vec3 up, float angle, float aspect) 
     Camera(R_, vec3(0., 1., 0.), vec3(0., 1., 0.), 90.0, (Res.x / Res.y));
 
     // rotation
