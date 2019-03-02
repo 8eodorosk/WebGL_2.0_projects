@@ -199,13 +199,13 @@ void main() {
     float mindist = -1000.0;
 
     //draw light souirce
-    bool isHit = hitSphere(R_.orig,R_.dir,lightSource.center,lightSource.radius,hit);
+    // bool isHit = hitSphere(R_.orig,R_.dir,lightSource.center,lightSource.radius,hit);
 
-    if(isHit && hit.z > mindist)
-    {
-        mindist = hit.z;
-        SceneCol.rgb= vec3(1.0,1.0,1.0);
-    }
+    // if(isHit && hit.z > mindist)
+    // {
+    //     mindist = hit.z;
+    //     SceneCol.rgb= vec3(1.0,1.0,1.0);
+    // }
 
     //draw mnesh loaded from texture data
     for (int i = 0; i < vertsCount; i += 3) {

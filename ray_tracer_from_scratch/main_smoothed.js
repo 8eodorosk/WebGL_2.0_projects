@@ -256,7 +256,7 @@ bool hitScene(Ray R_, out vec3 hitPos, out vec3 normal, out Material material, S
             vec3 uvt;
             vec3 intersect;
             float z;
-            bool isHit = hitTriangleSecond(R_.orig, R_.dir, a.xyz, b.xyz, c.xyz, uvt, triangleNormal, intersect, z);;
+            bool isHit = hitTriangleSecond(R_.orig, R_.dir, a.xyz, b.xyz, c.xyz, uvt, triangleNormal, intersect, z);
             if (isHit) {
 
                 if (z<mindist && z > 0.001) {
@@ -371,6 +371,8 @@ vec3 Trace(out Ray ray, Sphere lightSource){
 
 void main() {
     //initialize lightSource Ray, camera
+   
+    // Sphere lightSource = Sphere(vec3( 2.5*sin(time),1.5,2.5*cos(time)), 0.18);
     Sphere lightSource = Sphere(vec3(-1.,2.,3.), 0.18);
     R_ = Ray(vec3(0.0, 3.0, 6.0001), vec3(vuv, -1.));
     // void Camera(out Ray ray, vec3 lookAt, vec3 up, float angle, float aspect) 
@@ -448,7 +450,7 @@ void main() {
  
     //cube
     const verts = [
-     0.000000,0.500000,0.000000,
+       0.000000,0.500000,0.000000,
         0.425323,0.649346,0.309011,
         -0.162456,0.649346,0.499995,
         0.723607,1.052781,0.525725,
