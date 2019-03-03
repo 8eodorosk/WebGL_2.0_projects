@@ -5,7 +5,7 @@ const gl = canvas.getContext('webgl2');
 
 
 const { width, height } = canvas.getBoundingClientRect();
-console.log(width, height)
+// console.log(width, height)
 gl.canvas.width =  900; //window.innerWidth;
 gl.canvas.height =  450; //window.innerHeight;
 
@@ -69,8 +69,8 @@ const loadProgram = (vsSrc, fsSrc) =>
             const verts = texts[0].split(',');
             const vertsNorm = texts[1].split(',');
 
-            console.log(verts);
-            console.log(vertsNorm);
+            // console.log(verts);
+            // console.log(vertsNorm);
 
 
              // bind texture

@@ -29,13 +29,15 @@ with open('finalNormal.txt', 'w') as kappa:
 	for item in finalNormalList:
 		kappa.write("%s," % item[0])
 		kappa.write("%s," % item[1])
-		kappa.write("%s,\n" % item[2])
+		kappa.write("%s," % item[2])
+		#kappa.write("%s,\n" % item[2])
 
 with open('finalVertex.txt', 'w') as keepo:
 	for item in finalVertexList:
 		keepo.write("%s," % item[0])
 		keepo.write("%s," % item[1])
-		keepo.write("%s,\n" % item[2])
+		keepo.write("%s," % item[2])
+		# keepo.write("%s,\n" % item[2])
 
 objFile.close()
 kappa.close()
