@@ -372,7 +372,7 @@ vec3 Trace(out Ray ray, Sphere lightSource){
 void main() {
     //initialize lightSource Ray, camera
    
-    // Sphere lightSource = Sphere(vec3( 2.5*sin(time),1.5,2.5*cos(time)), 0.18);
+    //Sphere lightSource = Sphere(vec3( 2.5*sin(time),1.5,2.5*cos(time)), 0.18);
     Sphere lightSource = Sphere(vec3(-1.,2.,3.), 0.18);
     R_ = Ray(vec3(0.0, 3.0, 6.0001), vec3(vuv, -1.));
     // void Camera(out Ray ray, vec3 lookAt, vec3 up, float angle, float aspect) 
@@ -444,8 +444,7 @@ void main() {
     gl.bindTexture(gl.TEXTURE_2D, texture);
     
 
-    // blender 2.79 Icosphere
-    // export -> *.raw (needs to be enable first under settings)
+   
 
  
     //cube
