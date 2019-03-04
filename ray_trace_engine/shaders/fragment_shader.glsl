@@ -71,7 +71,6 @@ bool hitTriangleSecond( vec3 orig, vec3 dir, vec3 a, vec3 b, vec3 c,
     vec3 ab = b - a;
     vec3 ac = c - a;
 
-
     N = normalize(cross(ab, ac));
     //N = normalize(N);
 
@@ -109,8 +108,51 @@ bool hitTriangleSecond( vec3 orig, vec3 dir, vec3 a, vec3 b, vec3 c,
     return true;
 }
 
+bool hitTriangle( vec3 orig, vec3 dir, vec3 a, vec3 b, vec3 c, vec3 aN, vec3 bN, vec3 cN, 
+                        out vec3 uvt, out vec3 N, out vec3 x, out float dist) {
 
+    float eps=1e-8;
 
+    vec3 ab = b - a;
+    vec3 ac = c - a;
+
+    N = normalize(cross(ab, ac));
+    //N = normalize(N);
+
+    dist = dot(a - orig, N) / dot(dir, N);
+    x    = orig + dir * dist;
+
+    vec3 ax = x - a;
+
+    float d00 = dot(ab, ab);
+    float d01 = dot(ab, ac);
+    float d11 = dot(ac, ac);
+    float d20 = dot(ax, ab);
+    float d21 = dot(ax, ac);
+
+    float denom = d00 * d11 - d01 * d01; // determinant
+
+    // if the determinant is negative the triangle is backfacing
+    // if the determinant is close to 0, the ray misses the triangl
+    if ( denom <= eps )
+        return false;
+
+    uvt.y = (d11 * d20 - d01 * d21) / denom;
+    if ( uvt.y < 0.0 || uvt.y > 1.0 )
+        return false;
+
+    uvt.z = (d00 * d21 - d01 * d20) / denom;
+    if ( uvt.z < 0.0 || uvt.z > 1.0 )
+        return false;
+
+    uvt.x = 1.0 - uvt.y - uvt.z;
+    if ( uvt.x < 0.0 || uvt.x > 1.0 )
+        return false;
+    
+    N =  normalize(aN*uvt.x + bN*uvt.y + cN*uvt.z);
+    dist = dot(a - orig, N) / dot(dir, N);
+    return true;
+}
 
 void Camera(out Ray ray, vec3 lookAt, vec3 up, float angle, float aspect) {
 
@@ -141,7 +183,7 @@ float hitLightSource(Ray R_, Sphere sphere){
 //return intersection point with the mesh for the shadow ray
 float hitMesh(Ray R_){
     float mindist = 1000.;
-    vec4 a = vec4(0.0), b = vec4(0.0), c = vec4(0.0);
+    vec4 a = vec4(0.0), b = vec4(0.0), c = vec4(0.0), aN = vec4(0.0),bN= vec4(0.0),cN= vec4(0.0);
     vec3 intersect = vec3(0.0,0.0,0.0);
 
     for (int i = 0; i < vertsCount; i += 3) {
@@ -149,11 +191,16 @@ float hitMesh(Ray R_){
         b = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
         c = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
 
+        aN = texelFetch(uNormData, ivec2(i, 0), 0);
+        bN = texelFetchOffset(uNormData, ivec2(i, 0), 0, ivec2(1, 0));
+        cN = texelFetchOffset(uNormData, ivec2(i, 0), 0, ivec2(2, 0));
+
         vec3 triangleNormal;
         vec3 uvt;
         float z;
 
-        bool isHit = hitTriangleSecond(R_.orig, R_.dir, a.xyz, b.xyz, c.xyz, uvt, triangleNormal, intersect, z);;
+        //bool isHit = hitTriangle(R_.orig, R_.dir, a.xyz, b.xyz, c.xyz, aN.xyz, bN.xyz, cN.xyz, uvt, triangleNormal, intersect, z);
+        bool isHit = hitTriangleSecond(R_.orig, R_.dir, a.xyz, b.xyz, c.xyz, uvt, triangleNormal, intersect, z);
         if (isHit) {
             if (z<mindist && z > 0.001)  mindist = z;
         } 
@@ -215,7 +262,7 @@ bool hitScene(Ray R_, out vec3 hitPos, out vec3 normal, out Material material, S
         //    vec3 uvt;
         //    vec3 intersect;
         //    float z;
-        //    bool isHit = hitTriangleSecond(R_.orig, R_.dir, a.xyz, b.xyz, c.xyz, uvt, triangleNormal, intersect, z);;
+        //    bool isHit = hitTriangleSecond(R_.orig, R_.dir, a.xyz, b.xyz, c.xyz, uvt, triangleNormal, intersect, z);
         //    if (isHit) {
 
         //        if (z<mindist && z > 0.001) {
@@ -255,7 +302,7 @@ bool hitScene(Ray R_, out vec3 hitPos, out vec3 normal, out Material material, S
                     weHitSomething = true;
                     material.type = DIEL;
                     material.albedo = vec3(.8, .3, .4);
-                    normal = aN.xyz*uvt.x + bN.xyz*uvt.y + cN.xyz*uvt.z;
+                    normal = normalize(aN.xyz*uvt.x + bN.xyz*uvt.y + cN.xyz*uvt.z);
 
                     //normal = triangleNormal;
                     hitPos = hitPos1;            
@@ -272,7 +319,7 @@ bool hitScene(Ray R_, out vec3 hitPos, out vec3 normal, out Material material, S
         //    vec3 uvt;
         //    vec3 intersect;
         //    float z;
-        //    bool isHit = hitTriangleSecond(R_.orig, R_.dir, a.xyz, b.xyz, c.xyz, uvt, triangleNormal, intersect, z);;
+        //    bool isHit = hitTriangleSecond(R_.orig, R_.dir, a.xyz, b.xyz, c.xyz, uvt, triangleNormal, intersect, z);
         //    if (isHit) {
 
         //      if (z<mindist && z > 0.001) {
