@@ -69,8 +69,8 @@ const loadProgram = (vsSrc, fsSrc) =>
             const verts = texts[0].split(',');
             const vertsNorm = texts[1].split(',');
 
-            // console.log(verts);
-            // console.log(vertsNorm);
+            console.log(verts);
+            console.log(vertsNorm);
 
 
              // bind texture
