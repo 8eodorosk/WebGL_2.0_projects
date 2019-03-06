@@ -1,4 +1,4 @@
-objFile = open('test2.obj', 'r')
+objFile = open('scene_test_objects.obj', 'r')
 
 vertexList = []
 normalList = []

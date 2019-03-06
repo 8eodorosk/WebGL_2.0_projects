@@ -80,6 +80,7 @@ const loadProgram = (vsSrc, fsSrc) =>
 
              const meshVerts = new Float32Array(verts);
             const vertsLenght = meshVerts.length / 3;
+            console.log(vertsLenght);
             gl.uniform1i(uLvertices, vertsLenght);
 
             gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);

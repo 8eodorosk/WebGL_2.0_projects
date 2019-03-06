@@ -251,33 +251,41 @@ bool hitScene(Ray R_, out vec3 hitPos, out vec3 normal, out Material material, S
     if (alg == 2) {
 
         //here we chck all the mesh if we hit a triangle if the mesh and we keep the closest hitpoint
-       // for (int i = 0; i < 6; i += 3) {
+       for (int i = 0; i < 6; i += 3) {
            
-       //     a = texelFetch(uMeshData, ivec2(i, 0), 0);
-       //     b = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
-       //     c = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
+            a = texelFetch(uMeshData, ivec2(i, 0), 0);
+            b = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
+            c = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(2, 0));
 
+            aN = texelFetch(uNormData, ivec2(i, 0), 0);
+            bN = texelFetchOffset(uNormData, ivec2(i, 0), 0, ivec2(1, 0));
+            cN = texelFetchOffset(uNormData, ivec2(i, 0), 0, ivec2(2, 0));
 
+            //triangleNormal = normalize(normalize(aN.xyz) + normalize(bN.xyz) + normalize(cN.xyz));
 
-        //    vec3 uvt;
-        //    vec3 intersect;
-        //    float z;
-        //    bool isHit = hitTriangleSecond(R_.orig, R_.dir, a.xyz, b.xyz, c.xyz, uvt, triangleNormal, intersect, z);
-        //    if (isHit) {
+            vec3 uvt;
+            vec3 intersect;
+            float z;
+            bool isHit = hitTriangleSecond(R_.orig, R_.dir, a.xyz, b.xyz, c.xyz, uvt, triangleNormal, intersect, z);
+            if (isHit) {
 
-        //        if (z<mindist && z > 0.001) {
-        //            hitPos1 = intersect;
+                if (z<mindist && z > 0.001) {
+                    hitPos1 = intersect;
                     
-        //            mindist = z;
-        //            weHitSomething = true;
-        //            material.type = METAL;
-        //            material.albedo = vec3(.7, .7, .7);
-        //            normal = triangleNormal;
-        //            hitPos = hitPos1;
-        //        }
-        //    }      
-        //}
-        for (int i = 0; i < vertsCount; i += 3) {
+                    mindist = z;
+                    weHitSomething = true;
+                    material.type = METAL;
+                    material.albedo = vec3(.7, .7, .7);
+                    normal = normalize(aN.xyz*uvt.x + bN.xyz*uvt.y + cN.xyz*uvt.z);
+
+                    //normal = triangleNormal;
+                    hitPos = hitPos1;            
+                }
+           }      
+        }
+
+
+        for (int i = 6; i < vertsCount; i += 3) {
            
             a = texelFetch(uMeshData, ivec2(i, 0), 0);
             b = texelFetchOffset(uMeshData, ivec2(i, 0), 0, ivec2(1, 0));
@@ -350,56 +358,58 @@ vec3 Trace(out Ray ray, Sphere lightSource){
     vec3 attenuation = vec3(1.);
     vec3 light = vec3(1.,1.,1.), shadow = vec3(1.,1.,1.);
 
+    // for(int i=0; i< 2; i++){
     //this if for every ray to bounce 4 times.(hopefully)
-    for(int i=0; i< 3; i++){
-        
-        // we check if we hit something
-        if(hitScene(ray, hitPos, normal, material, lightSource)){
-            if (material.type == METAL) {
-                //we calculate the new direction
-                vec3 direction = normalize(reflect(ray.dir, normal));
+        for(int i=0; i< 3; i++){
+            
+            // we check if we hit something
+            if(hitScene(ray, hitPos, normal, material, lightSource)){
+                if (material.type == METAL) {
+                    //we calculate the new direction
+                    vec3 direction = normalize(reflect(ray.dir, normal));
 
-                //if (dot(direction,normal) > 0.) {
-                    ray = Ray(hitPos, direction); 
-                    light = getLight(color, lightSource,hitPos, normal);
-                    shadow = calcShadow(lightSource, hitPos);
-                    color *= material.albedo * light*shadow;
-                    attenuation *= material.albedo;   
-                    //color = normal *light; 
+                    //if (dot(direction,normal) > 0.) {
+                        ray = Ray(hitPos, direction); 
+                        light = getLight(color, lightSource,hitPos, normal);
+                        //shadow = calcShadow(lightSource, hitPos);
+                        color *= material.albedo * light*shadow;
+                        attenuation *= material.albedo;   
+                        //color = normal *light; 
+                        
+                   // }
                     
-               // }
-                
-               // else{
+                   // else{
 
-                  //  color = hitPos;
-               //}
-            }
-            if (material.type == DIEL) {
-                //we calculate the new direction
-                vec3 direction = normalize(reflect(ray.dir, normal));
-                //vec3 direction = normal + randomUnitVector();
+                      //  color = hitPos;
+                   //}
+                }
+                if (material.type == DIEL) {
+                    //we calculate the new direction
+                    vec3 direction = normalize(reflect(ray.dir, normal));
+                    //vec3 direction = normal + randomUnitVector();
 
 
-                //if (dot(direction,normal) > 0.) {
-                    ray = Ray(hitPos, direction); 
-                    light = getLight(color, lightSource,hitPos, normal);
-                    shadow = calcShadow(lightSource, hitPos);
-                    color *= material.albedo * light*shadow;
-                    attenuation *= material.albedo;   
-                    //color = normal *light; 
+                    //if (dot(direction,normal) > 0.) {
+                        ray = Ray(hitPos, direction); 
+                        light = getLight(color, lightSource,hitPos, normal);
+                        //shadow = calcShadow(lightSource, hitPos);
+                        color *= material.albedo * light*shadow;
+                        attenuation *= material.albedo;   
+                        //color = normal *light; 
+                        
+                    //}
                     
-                //}
-                
-               // else{
+                   // else{
 
-                  //  color = hitPos;
-               //}
+                      //  color = hitPos;
+                   //}
+                }
+            } else {
+                //color = attenuation * vec3(.2,.2, .2);
             }
-        } else {
-            //color = attenuation * vec3(.2,.2, .2);
+           
         }
-       
-    }
+    // }
 
     return color;
 }
