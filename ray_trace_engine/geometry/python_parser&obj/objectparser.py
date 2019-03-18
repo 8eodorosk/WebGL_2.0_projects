@@ -1,4 +1,4 @@
-objFile = open('scene_test_objects.obj', 'r')
+objFile = open('MONKEY.obj', 'r')
 
 vertexList = []
 normalList = []
@@ -25,14 +25,14 @@ for f in range(0,len(facesList)):
 	finalVertexList.append(vertexList[int(facesList[f][0])-1])
 	finalNormalList.append(normalList[int(facesList[f][1])-1])
 
-with open('finalNormal.txt', 'w') as kappa:
+with open('finalNormal_MONKEY.txt', 'w') as kappa:
 	for item in finalNormalList:
 		kappa.write("%s," % item[0])
 		kappa.write("%s," % item[1])
 		kappa.write("%s," % item[2])
 		#kappa.write("%s,\n" % item[2])
 
-with open('finalVertex.txt', 'w') as keepo:
+with open('finalVertex_MONKEY.txt', 'w') as keepo:
 	for item in finalVertexList:
 		keepo.write("%s," % item[0])
 		keepo.write("%s," % item[1])
