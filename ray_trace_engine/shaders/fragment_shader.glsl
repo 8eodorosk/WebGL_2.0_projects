@@ -386,7 +386,7 @@ vec3 Trace(out Ray ray, Sphere lightSource){
 
 
     //this if for every ray to bounce 4 times.(hopefully)
-    for(int i=0; i< 2; i++){
+    for(int i=0; i< 3; i++){
         
         // we check if we hit something
         if(hitScene(ray, hitPos, normal, material, lightSource)){
@@ -448,9 +448,9 @@ vec3 Trace(out Ray ray, Sphere lightSource){
 void main() {
     //initialize lightSource Ray, camera
    
-    // Sphere lightSource = Sphere(vec3( 3.5*sin(time)+1.5,1.5,3.5*cos(time)+1.5), 3.18);
-    Sphere lightSource = Sphere(vec3(-1.,2.,3.), 0.18);
-    R_ = Ray(vec3(0.0, 3.0, 10.0001), vec3(vuv, -1.));
+    Sphere lightSource = Sphere(vec3( 3.5*sin(time)+1.5,1.5,3.5*cos(time)+1.5), 3.18);
+    // Sphere lightSource = Sphere(vec3(-1.,2.,3.), 0.18);
+    R_ = Ray(vec3(0.0, 3.0, 8.0001), vec3(vuv, -1.));
     // void Camera(out Ray ray, vec3 lookAt, vec3 up, float angle, float aspect) 
     Camera(R_, vec3(0., 1., 0.), vec3(0., 1., 0.), 90.0, (Res.x / Res.y));
 
